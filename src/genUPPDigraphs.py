@@ -63,6 +63,7 @@ def attemptGenUPPRowByRow(adj: np.ndarray, i: int, k: int, possibleRows: list, _
     '''
 
     if i == k ** 2:
+        # For some reason yield didn't work, would be nicer with it
         _temp.append(np.copy(adj))
     else:
         for row in possibleRows:
