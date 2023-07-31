@@ -7,7 +7,7 @@ def validSwitch(adj: np.ndarray, p: int, q: int, r: int, s: int) -> bool:
     '''
     Checks if the provided parameters form a valid switch on the adjacency matrix A = adj.
 
-    By Fletcher [<insert ref here>], we require\n
+    By Fletcher (as was said in https://doi.org/10.1016/j.jcta.2011.03.009), we require\n
     \t(1) 0 <= p < q <= k^2, 0 <= r < s <= k^2\n
     \t(2) {p,q}\cap{r,s}=\emptyset\n 
     \t(3) columns p,q are equal in A, rows r,s are equal in A\n
