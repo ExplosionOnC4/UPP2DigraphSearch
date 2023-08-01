@@ -7,6 +7,7 @@ networkx==3.1
 numpy==1.25.1
 packaging==23.1
 Pillow==10.0.0
+pynauty==2.8.6
 pyparsing==3.0.9
 python-dateutil==2.8.2
 scipy==1.11.1
