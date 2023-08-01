@@ -2,6 +2,7 @@ import networkx as nx
 import itertools
 import numpy as np
 import matplotlib.pyplot as plt
+from utilsUPP import *
 
 def genPossibleUPPRows(k: int) -> list:
     '''
@@ -12,13 +13,6 @@ def genPossibleUPPRows(k: int) -> list:
     for ls in list(itertools.combinations(range(k ** 2), k)):
         rows.append(createRowVectorFromIndexList(k, ls))
     return rows
-
-def checkMostSinglePath(adj: np.ndarray) -> bool:
-    '''
-    Checks that the graph with the given adjacency matrix has at most one path of length 2 between any two points
-    '''
-
-    return np.max(np.linalg.matrix_power(adj, 2)) <= 1
 
 def createBasisCentralDigraph(k: int) -> np.ndarray:
     '''
@@ -31,27 +25,6 @@ def createBasisCentralDigraph(k: int) -> np.ndarray:
     for i in range(k):
         D_adj[i] = createRowVectorFromIndexList(k, range(i * k, (i + 1) * k))
     return D_adj
-
-def createStandardCentralDigraph(k: int) -> np.ndarray:
-    '''
-    Creates the standard example of a central digraph on k^2 vertices, which is consecutive 1s being shifted cyclically over the rows
-    '''
-
-    D_adj = nx.to_numpy_array(nx.empty_graph(k ** 2))
-    for i in range(k ** 2):
-        D_adj[i] = createRowVectorFromIndexList(k, range((i % k) * k, ((i % k) + 1) * k))
-    return D_adj
-
-def createRowVectorFromIndexList(k: int, ls: list) -> np.ndarray:
-    '''
-    Given a list of indices, creates a k^2 dim {0-1} vector with 1's in the specified indices
-    '''
-
-    row = np.zeros(k ** 2)
-    for i in ls:
-        row[i] = 1
-    return row
-
 
 
 def attemptGenUPPRowByRow(adj: np.ndarray, i: int, k: int, possibleRows: list, _temp=[]) -> list[np.ndarray]:

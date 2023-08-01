@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import itertools
 import pynauty as nauty
 from queue import Queue
+from utilsUPP import *
 
 def validSwitch(adj: np.ndarray, p: int, q: int, r: int, s: int) -> bool:
     '''
@@ -38,47 +39,6 @@ def performSwitch(adj: np.ndarray, p: int, q: int, r: int, s: int) -> np.ndarray
             for j in (r,s):
                 adj[i][j] = (adj[i][j] + 1) % 2
 
-def paritionEqualRowIndices(adj: np.ndarray) -> map:
-    '''
-    Partitions the set of row indices into equivalence classes based on equality, i.e. two rows will lie in the same class if they are equal
-    '''
-
-    rowsHashMap={}
-    for i in range(np.shape(adj)[0]):
-        key = adj[i].tobytes()
-        if key in rowsHashMap:
-            rowsHashMap[key].append(i)
-        else:
-            rowsHashMap[key] = [i]
-    return rowsHashMap
-
-
-def partitionEqualColIndices(adj: np.ndarray) -> map:
-    '''
-    Partitions the set of column indices into equivalence classes based on equality, i.e. two rows will lie in the same class if they are equal
-    '''
-
-    return paritionEqualRowIndices(np.transpose(adj))
-
-def containsIdenticalRows(adj: np.ndarray) -> bool:
-    '''
-    Checks that there exits at least two rows in the adjacency matrix that are equal
-    '''
-
-    parts = paritionEqualRowIndices(adj)
-    for _, v in parts.items():
-        if len(v) > 1:
-            return True
-    return False
-
-def containsIdenticalCols(adj: np.ndarray) -> bool:
-    '''
-    Checks that there exits at least two columns in the adjacency matrix that are equal
-
-    This will be useful for verifying the conjecture that there are no central digraphs with all columns different
-    '''
-
-    return containsIdenticalRows(np.transpose(adj))
 
 def switchConnectedComponentFromVertex(adj: np.ndarray) -> dict[list]:
     '''
@@ -123,19 +83,8 @@ def switchConnectedComponentFromVertex(adj: np.ndarray) -> dict[list]:
     return isomorphHash
 
 
-
-def convertAdjMatrixToNeighbourList(adj: np.ndarray) -> dict[list]:
-    return nx.to_dict_of_lists(nx.DiGraph(adj))
-
-def createNautyGraphFromAdjMatrix(adj: np.ndarray) -> nauty.Graph:
-    G = nx.DiGraph(adj)
-    return nauty.Graph(number_of_vertices=G.order(), directed=True, adjacency_dict=nx.to_dict_of_lists(G))
-
-
-
 if __name__ == '__main__':
-    import genUPPDigraphs as gen
-    stand = gen.createStandardCentralDigraph(3)
+    stand = createStandardCentralDigraph(3)
     # print(nauty.canon_label(createNautyGraphFromAdjMatrix(stand)))
     print(switchConnectedComponentFromVertex(stand))
     # print(containsIdenticalCols(stand))
