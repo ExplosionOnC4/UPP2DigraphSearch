@@ -59,7 +59,7 @@ def switchConnectedComponentFromVertex(adj: np.ndarray) -> dict[list]:
     while not q.empty():
         tempAdj = q.get()
         # lists aren't hashable
-        tempLabel = str(nauty.canon_label(createNautyGraphFromAdjMatrix(tempAdj)))
+        tempLabel = nauty.certificate(createNautyGraphFromAdjMatrix(tempAdj))
 
         # TODO make this quicker, eg only check on partitions of rows/columns
         for rows in list(itertools.combinations(range(np.shape(tempAdj)[0]), 2)):
@@ -67,7 +67,7 @@ def switchConnectedComponentFromVertex(adj: np.ndarray) -> dict[list]:
                 if validSwitch(tempAdj, *rows, *cols):
                     newAdj = np.copy(tempAdj)
                     performSwitch(newAdj, *rows, *cols)
-                    newLabel = str(nauty.canon_label(createNautyGraphFromAdjMatrix(newAdj)))
+                    newLabel = nauty.certificate(createNautyGraphFromAdjMatrix(newAdj))
 
                     # For a central digraph, look at the digraphs attainable from one switch and add them to the neighbourhood
                     if tempLabel in isomorphHash and newLabel not in isomorphHash[tempLabel]:
@@ -86,6 +86,6 @@ def switchConnectedComponentFromVertex(adj: np.ndarray) -> dict[list]:
 if __name__ == '__main__':
     stand = createStandardCentralDigraph(3)
     # print(nauty.canon_label(createNautyGraphFromAdjMatrix(stand)))
-    print(switchConnectedComponentFromVertex(stand))
+    print(len(switchConnectedComponentFromVertex(stand)))
     # print(containsIdenticalCols(stand))
     # print([i for i in partitionEqualColIndices(stand).values()])
