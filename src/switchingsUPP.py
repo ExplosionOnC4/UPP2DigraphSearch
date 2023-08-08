@@ -23,7 +23,7 @@ def validSwitch(adj: np.ndarray, p: int, q: int, r: int, s: int) -> bool:
             np.array_equal(adj[r], adj[s]) and np.array_equal(adj[:,p], adj[:,q]) and
             adj[p][r] == adj[q][s] and adj[p][s] == adj[q][r] and adj[p][r] != adj[p][s])
     
-def performSwitch(adj: np.ndarray, p: int, q: int, r: int, s: int) -> np.ndarray:
+def performSwitch(adj: np.ndarray, p: int, q: int, r: int, s: int):
     '''
     Switches the 2x2 submatrix A[p,q;r,s] between I and J-I if Fletcher conditions hold
 
