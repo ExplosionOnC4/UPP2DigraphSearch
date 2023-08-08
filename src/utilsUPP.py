@@ -78,3 +78,17 @@ def convertAdjMatrixToNeighbourList(adj: np.ndarray) -> dict[list]:
 def createNautyGraphFromAdjMatrix(adj: np.ndarray) -> nauty.Graph:
     G = nx.DiGraph(adj)
     return nauty.Graph(number_of_vertices=G.order(), directed=True, adjacency_dict=nx.to_dict_of_lists(G))
+
+def recoverGraphFromNautyCert(cert, numVerts: int) -> nauty.Graph:
+    '''
+    Recovers the Nauty graph from its binary string form given by nauty.certificate
+
+    From https://github.com/pdobsan/pynauty/issues/30#issuecomment-1564066767 although original post is broken
+    '''
+
+    set_length = len(cert)
+    lenVertString = int(set_length / numVerts)
+
+    sets = [cert[lenVertString*k:lenVertString*(k+1)] for k in range(numVerts)]
+    neighbors = [[i for i in range(lenVertString * 8) if st[-1 - i//8] & (1 << (7 - i%8))] for st in sets]
+    return nauty.Graph(number_of_vertices=numVerts, directed=True, adjacency_dict={i: neighbors[i] for i in range(numVerts)})
