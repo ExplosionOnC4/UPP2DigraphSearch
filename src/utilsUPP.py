@@ -29,6 +29,15 @@ def createStandardCentralDigraph(k: int) -> np.ndarray:
         D_adj[i] = createRowVectorFromIndexList(k, range((i % k) * k, ((i % k) + 1) * k))
     return D_adj
 
+def createBasisBlockMatrix(i: int, k: int) -> np.ndarray:
+    '''
+    For a given i, returns a the i-th kxk block submatrix from first row of standard central digraph.
+    '''
+
+    adj = np.zeros((k, k))
+    adj[i] = np.ones(k)
+    return adj
+
 def paritionEqualRowIndices(adj: np.ndarray) -> map:
     '''
     Partitions the set of row indices into equivalence classes based on equality, i.e. two rows will lie in the same class if they are equal
@@ -92,3 +101,32 @@ def recoverGraphFromNautyCert(cert, numVerts: int) -> nauty.Graph:
     sets = [cert[lenVertString*k:lenVertString*(k+1)] for k in range(numVerts)]
     neighbors = [[i for i in range(lenVertString * 8) if st[-1 - i//8] & (1 << (7 - i%8))] for st in sets]
     return nauty.Graph(number_of_vertices=numVerts, directed=True, adjacency_dict={i: neighbors[i] for i in range(numVerts)})
+
+def getSetRepresentationAdjacencyMatrix(adj: np.ndarray) -> list[int]:
+    '''
+    Get the set representation of graph by labelling the entries of the adjacency matrix from 0 to k^2-1. Returns the set containing the non-zero entries.
+
+    For use with induced permutation of S_{k^2} on {0, ..., k^2-1}
+    '''
+
+    set = []
+    for i in range(np.shape(adj)[0]):
+        for j in range(np.shape(adj)[1]):
+            if adj[i][j] != 0:
+                set.append(adj.shape()[1] * i + j)
+    return set
+
+def getAdjacencyMatrixFromSet(set: list[int], n: int) -> np.ndarray:
+    '''
+    The reverse of getSetRepresentationAdjacencyMatrix(), recovers the adjacency matrix
+    '''
+
+    adj = np.zeros((n, n))
+    for i in set:
+        adj[int(i / n)][i % n] = 1
+
+    return adj
+
+def getLexMinAdjacencyMatrix(adj: np.ndarray) -> np.ndarray:
+    # stub for later
+    pass
