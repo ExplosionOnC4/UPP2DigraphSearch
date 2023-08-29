@@ -63,14 +63,14 @@ def genPossibleBlocksGivenEdgeConditions(rowSums: list[int], colSums: list[int],
     provided bound. If rowExact or colExact are true then the corresponding bounds have to be met.
     '''
 
-    if min(rowSums) < 0 or min(colSums) < 0:
+    if np.min(rowSums) < 0 or np.min(colSums) < 0:
         return []
 
     # Terminate immediately if both row and column exact but sums are different as each 1 adds to both rowSum and colSum
-    if rowExact and colExact and sum(rowSums) != sum(colSums):
+    if rowExact and colExact and np.sum(rowSums) != np.sum(colSums):
         return []
     # Further initial impossible condition.
-    if (sum(rowSums) < sum(colSums) and colExact) or (sum(colSums) < sum(rowSums) and rowExact):
+    if (np.sum(rowSums) < np.sum(colSums) and colExact) or (np.sum(colSums) < np.sum(rowSums) and rowExact):
         return []
 
     # Ideally calculate all exact solutions first and then get non-exact solutions by deleting 1's but not sure that hits all of them.
@@ -80,7 +80,7 @@ def genPossibleBlocksGivenEdgeConditions(rowSums: list[int], colSums: list[int],
 
     # NOTE this is definitely some puzzle game already if assuming exactness. It is a strictly harder version of Picross/Nonograms (no intermidiate information)
     # which is already NP-complete.
-    maxOnes = min(sum(rowSums), sum(colSums))
+    maxOnes = min(np.sum(rowSums), np.sum(colSums))
     if maxOnes > 0:
         for i in range(_i, len(rowSums)):
             for j in range(_j * int(i == _i), len(colSums)):
@@ -89,8 +89,8 @@ def genPossibleBlocksGivenEdgeConditions(rowSums: list[int], colSums: list[int],
                     _block[i][j] = 1
                     rowSums[i] -= 1
                     colSums[j] -= 1
-                    if (not rowExact and not colExact) or (rowExact and sum(rowSums) == 0) or (colExact and sum(colSums) == 0):
-                        _blocks.append(_block)
+                    if (not rowExact and not colExact) or (rowExact and np.sum(rowSums) == 0) or (colExact and np.sum(colSums) == 0):
+                        _blocks.append(np.copy(_block))
                         # BUG does not add zero block for not exact case
 
                     genPossibleBlocksGivenEdgeConditions(rowSums, colSums, rowExact, colExact, _block, i, j, _blocks)
@@ -103,7 +103,7 @@ def genPossibleBlocksGivenEdgeConditions(rowSums: list[int], colSums: list[int],
 
 def findRowSums(matrix: np.ndarray) -> list[int]:
     rowSums = []
-    for i in range(len(matrix[0])):
+    for i in range(np.shape(matrix)[0]):
         rowSums.append(sum(matrix[i]))
     return rowSums
 
@@ -116,17 +116,20 @@ def appendBlocksIntermidMatrix(matrix: np.ndarray, blockList: list[np.ndarray], 
     to the (i+1)-th row/column. If blockList has length less than 2i+1 then fill remaining blocks with the zero matrix.
     '''
 
+    # Consider rewriting to use np.block() or np.concatenate()
+
     zeroBlock = np.zeros((k, k))
     # fill in empty blocks with zero
+    zerodBlockList = list(blockList)
     for j in range(2 * i + 1 - len(blockList)):
-        blockList.append(zeroBlock)
+        zerodBlockList.append(zeroBlock)
 
     fullMatrix = np.zeros((k*(i+1), k*(i+1)))
     fullMatrix[:k*i,:k*i] = matrix
     for j in range(i):
-        fullMatrix[k*j:k*(j+1),k*i:] = blockList[j]
+        fullMatrix[k*j:k*(j+1),k*i:] = zerodBlockList[j]
     for j in range(i + 1):
-        fullMatrix[k*(i+1):,k*j:k*(j+1)] = blockList[j + i]
+        fullMatrix[k*i:,k*j:k*(j+1)] = zerodBlockList[j + i]
     return fullMatrix
 
 def genUPPByBlockDFS(k: int) -> list[np.ndarray]:
@@ -157,8 +160,8 @@ def genUPPByBlockDFS(k: int) -> list[np.ndarray]:
                     stackDFS.append([createBasisBlockMatrix(i, k)])
 
                 elif len(filledBlocks) < i: # filling in column i+1
-                    rowSum = subMatrix[k * len(filledBlocks):(k+1) * len(filledBlocks) + 1,:]
-                    canBlocks = genPossibleBlocksGivenEdgeConditions(rowSums=[k - i for i in rowSum], colSums=colEdgeCondition, rowExact=(i == k - 1), colExact=True, _block=zeroBlock)
+                    rowSum = findRowSums(subMatrix[k * len(filledBlocks):k * (len(filledBlocks) + 1),:])
+                    canBlocks = genPossibleBlocksGivenEdgeConditions(rowSums=[k - i for i in rowSum], colSums=colEdgeCondition, rowExact=(i == k - 1), colExact=True, _block=zeroBlock, _blocks=[])
                     for block in canBlocks:
                         tempBlockList = list(filledBlocks) + [block]
                         mat = appendBlocksIntermidMatrix(subMatrix, tempBlockList, k, i)
@@ -170,21 +173,21 @@ def genUPPByBlockDFS(k: int) -> list[np.ndarray]:
                     horizBlocks = filledBlocks[i:] # Get all blocks already inserted into row i+1
                     if horizBlocks:
                         rows = [findRowSums(arr) for arr in horizBlocks]
-                        rowSum = [sum(x) for x in zip(*rows)]
+                        rowSum = [np.sum(x) for x in zip(*rows)]
                     else:
                         rowSum = [0 for i in range(k)]
 
                     # the bottom right corner block -> has to be row exact too if last i
-                    canBlocks = genPossibleBlocksGivenEdgeConditions(rowSums=[k - i for i in rowSum], colSums=colEdgeCondition, rowExact=(i == k - 1 and len(filledBlocks) >= 2 * i), colExact=True, _block=zeroBlock)
+                    canBlocks = genPossibleBlocksGivenEdgeConditions(rowSums=[k - i for i in rowSum], colSums=colEdgeCondition, rowExact=(i == k - 1 and len(filledBlocks) >= 2 * i), colExact=True, _block=zeroBlock, _blocks=[])
                     for block in canBlocks:
                         tempBlockList = list(filledBlocks) + [block]
                         mat = appendBlocksIntermidMatrix(subMatrix, tempBlockList, k, i)
                         # TODO apply canonical form/lexMin on mat
                         if checkMostSinglePath(mat):
-                            if i == k - 1:
-                                temp.append(mat)
-                            else:
+                            if len(tempBlockList) < 2 * i + 1:
                                 stackDFS.append(tempBlockList)
+                            else:
+                                temp.append(mat)
 
         intermidMatrices = temp
 
@@ -193,7 +196,10 @@ def genUPPByBlockDFS(k: int) -> list[np.ndarray]:
 def __main__():
     # nx.draw(nx.from_numpy_array(createStandardCentralDigraph(4), create_using=nx.DiGraph))
     # plt.show()
-    ls = genUPPMatrices(3)
+    # ls = genUPPMatrices(3)
+    ls2 = genUPPByBlockDFS(4)
+    print(len(ls2))
+    # print(ls2)
     # print(ls[-6:])
     # print(len(ls))
 
