@@ -145,6 +145,7 @@ def genUPPByBlockDFS(k: int) -> list[np.ndarray]:
     for i in range(1, k):
         # the (i+1)x(i+1) submatrices
         temp = []
+        hashSet = set()
         for subMatrix in intermidMatrices:
             # store the array of added blocks in stack as they generate the new matrix
             stackDFS = [[]]
@@ -165,7 +166,6 @@ def genUPPByBlockDFS(k: int) -> list[np.ndarray]:
                     for block in canBlocks:
                         tempBlockList = list(filledBlocks) + [block]
                         mat = appendBlocksIntermidMatrix(subMatrix, tempBlockList, k, i)
-                        # TODO apply canonical form/lexMin on mat
                         if checkMostSinglePath(mat):
                             stackDFS.append(tempBlockList)
 
@@ -182,12 +182,15 @@ def genUPPByBlockDFS(k: int) -> list[np.ndarray]:
                     for block in canBlocks:
                         tempBlockList = list(filledBlocks) + [block]
                         mat = appendBlocksIntermidMatrix(subMatrix, tempBlockList, k, i)
-                        # TODO apply canonical form/lexMin on mat
                         if checkMostSinglePath(mat):
                             if len(tempBlockList) < 2 * i + 1:
                                 stackDFS.append(tempBlockList)
                             else:
-                                temp.append(mat)
+                                # apply canonical form/lexMin on mat
+                                mat = getLexMinAdjacencyMatrix(mat)
+                                if mat.tobytes() not in hashSet:
+                                    temp.append(mat)
+                                    hashSet.add(mat.tobytes())
 
         intermidMatrices = temp
 
@@ -199,7 +202,7 @@ def __main__():
     # ls = genUPPMatrices(3)
     ls2 = genUPPByBlockDFS(4)
     print(len(ls2))
-    # print(ls2)
+    print(ls2)
     # print(ls[-6:])
     # print(len(ls))
 
