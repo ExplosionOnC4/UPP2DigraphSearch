@@ -105,9 +105,9 @@ def recoverGraphFromNautyCert(cert, numVerts: int) -> nauty.Graph:
 
 def getSetRepresentationAdjacencyMatrix(adj: np.ndarray) -> list[int]:
     '''
-    Get the set representation of graph by labelling the entries of the adjacency matrix from 1 to k^2. Returns the set containing the non-zero entries.
+    Get the set representation of graph by labelling the entries of the adjacency matrix from 1 to n. Returns the set containing the non-zero entries.
 
-    For use with induced permutation of S_{k^2} on {1, ..., k^2} x {1, ..., k^2}
+    For use with induced permutation of S_{n} on {1, ..., n} x {1, ..., n}
     '''
 
     set = []
@@ -128,7 +128,7 @@ def getAdjacencyMatrixFromSet(set: list[int], n: int) -> np.ndarray:
 
     return adj
 
-def getLexMinAdjacencyMatrix(adj: np.ndarray) -> np.ndarray:
+def isLexMinAdjacencyMatrix(adj: np.ndarray) -> bool:
     '''
     Finds the adjacency matrix of the lexicographically minimal graph labelling of a given graph
     '''
@@ -136,4 +136,4 @@ def getLexMinAdjacencyMatrix(adj: np.ndarray) -> np.ndarray:
     set = getSetRepresentationAdjacencyMatrix(adj)
     n = np.shape(adj)[0]
     proc = subprocess.run(args=['sh', 'lexMin.sh', f'{set}', f'{n}'], capture_output=True, text=True)
-    return getAdjacencyMatrixFromSet(eval(proc.stdout), n)
+    return proc.stdout.strip() == 'true'

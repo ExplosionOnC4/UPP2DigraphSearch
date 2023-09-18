@@ -10,5 +10,5 @@ lexMin := function(set, n)
         Add(lsPerm, PermListList( elems, List( elems, i -> OnPairs(i, gen) ) ));
     od;
 
-    return MinimalImage(GroupByGenerators(lsPerm), set, OnSets);
+    return IsMinimalImage(GroupByGenerators(lsPerm), set, OnSets);
 end;

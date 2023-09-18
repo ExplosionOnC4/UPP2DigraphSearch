@@ -135,7 +135,6 @@ def appendBlocksIntermidMatrix(matrix: np.ndarray, blockList: list[np.ndarray], 
 def genUPPByBlockDFS(k: int) -> list[np.ndarray]:
     '''
     Based of algorithm in appendix A.2 in https://doi.org/10.1016/j.jcta.2011.03.009
-    TODO ask Gordon about how to get group action of S_{k^2} unto the adjacency matrix, put that into lexMin function in utils
     '''
 
     intermidMatrices = [createBasisBlockMatrix(0, k)] # add M_1
@@ -143,9 +142,10 @@ def genUPPByBlockDFS(k: int) -> list[np.ndarray]:
     colEdgeCondition = [1 for i in range(k)]
 
     for i in range(1, k):
+        # print(len(intermidMatrices))
+
         # the (i+1)x(i+1) submatrices
         temp = []
-        hashSet = set()
         for subMatrix in intermidMatrices:
             # store the array of added blocks in stack as they generate the new matrix
             stackDFS = [[]]
@@ -162,11 +162,11 @@ def genUPPByBlockDFS(k: int) -> list[np.ndarray]:
 
                 elif len(filledBlocks) < i: # filling in column i+1
                     rowSum = findRowSums(subMatrix[k * len(filledBlocks):k * (len(filledBlocks) + 1),:])
-                    canBlocks = genPossibleBlocksGivenEdgeConditions(rowSums=[k - i for i in rowSum], colSums=colEdgeCondition, rowExact=(i == k - 1), colExact=True, _block=zeroBlock, _blocks=[])
+                    canBlocks = genPossibleBlocksGivenEdgeConditions(rowSums=[k - i for i in rowSum], colSums=colEdgeCondition, rowExact=(i == k - 1), colExact=True, _block=zeroBlock, _i=0, _j=0, _blocks=[])
                     for block in canBlocks:
                         tempBlockList = list(filledBlocks) + [block]
                         mat = appendBlocksIntermidMatrix(subMatrix, tempBlockList, k, i)
-                        if checkMostSinglePath(mat):
+                        if checkMostSinglePath(mat) and isLexMinAdjacencyMatrix(mat):
                             stackDFS.append(tempBlockList)
 
                 else: # filling in row i+1
@@ -178,19 +178,25 @@ def genUPPByBlockDFS(k: int) -> list[np.ndarray]:
                         rowSum = [0 for i in range(k)]
 
                     # the bottom right corner block -> has to be row exact too if last i
-                    canBlocks = genPossibleBlocksGivenEdgeConditions(rowSums=[k - i for i in rowSum], colSums=colEdgeCondition, rowExact=(i == k - 1 and len(filledBlocks) >= 2 * i), colExact=True, _block=zeroBlock, _blocks=[])
+                    canBlocks = genPossibleBlocksGivenEdgeConditions(rowSums=[k - i for i in rowSum], colSums=colEdgeCondition, rowExact=(i == k - 1 and len(filledBlocks) >= 2 * i), colExact=True, _block=zeroBlock, _i=0, _j=0, _blocks=[])
                     for block in canBlocks:
                         tempBlockList = list(filledBlocks) + [block]
                         mat = appendBlocksIntermidMatrix(subMatrix, tempBlockList, k, i)
                         if checkMostSinglePath(mat):
                             if len(tempBlockList) < 2 * i + 1:
                                 stackDFS.append(tempBlockList)
-                            else:
-                                # apply canonical form/lexMin on mat
-                                mat = getLexMinAdjacencyMatrix(mat)
-                                if mat.tobytes() not in hashSet:
-                                    temp.append(mat)
-                                    hashSet.add(mat.tobytes())
+
+                            # Can only check if lexMin if the entire last row has been filled, for example:
+                            #
+                            # [[1,1,1,0,0,0],[0,0,0,1,1,1],[0,0,0,0,0,0],[1,1,0,0,1,0],[0,0,0,0,0,0],[0,0,1,1,0,1]] is lexMin while
+                            # [[1,1,1,0,0,0],[0,0,0,1,1,1],[0,0,0,0,0,0],[1,1,0,0,0,0],[0,0,0,0,0,0],[0,0,1,0,0,0]] is not as the permutation (56)
+                            # makes the adjacency matrix lexicographically smaller
+                            #
+                            # Checking lexMin on the (i+1)th column *should* be safe (as if not lexMin on insert then will not be lexMin after the entire submatrix
+                            # has been filled in) but should be formally proved.
+                            # The assumption will drastically speed up the algorithm as we early abort big subtrees.
+                            elif isLexMinAdjacencyMatrix(mat):
+                                temp.append(mat)            
 
         intermidMatrices = temp
 
