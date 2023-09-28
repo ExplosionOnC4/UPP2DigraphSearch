@@ -3,6 +3,7 @@ import itertools
 import numpy as np
 import matplotlib.pyplot as plt
 from utilsUPP import *
+from sageGAP import PreCompInducedPermGroup
 
 def genPossibleUPPRows(k: int) -> list:
     '''
@@ -142,7 +143,10 @@ def genUPPByBlockDFS(k: int) -> list[np.ndarray]:
     colEdgeCondition = [1 for i in range(k)]
 
     for i in range(1, k):
-        # print(len(intermidMatrices))
+        print(len(intermidMatrices))
+        if i == k-1:
+            np.savez('./intermid34', *intermidMatrices)
+        group = PreCompInducedPermGroup(i * (k + 1))
 
         # the (i+1)x(i+1) submatrices
         temp = []
@@ -166,7 +170,7 @@ def genUPPByBlockDFS(k: int) -> list[np.ndarray]:
                     for block in canBlocks:
                         tempBlockList = list(filledBlocks) + [block]
                         mat = appendBlocksIntermidMatrix(subMatrix, tempBlockList, k, i)
-                        if checkMostSinglePath(mat) and isLexMinAdjacencyMatrix(mat):
+                        if checkMostSinglePath(mat) and group.isLexMinAdjacencyMatrixSage(mat):
                             stackDFS.append(tempBlockList)
 
                 else: # filling in row i+1
@@ -195,7 +199,7 @@ def genUPPByBlockDFS(k: int) -> list[np.ndarray]:
                             # Checking lexMin on the (i+1)th column *should* be safe (as if not lexMin on insert then will not be lexMin after the entire submatrix
                             # has been filled in) but should be formally proved.
                             # The assumption will drastically speed up the algorithm as we early abort big subtrees.
-                            elif isLexMinAdjacencyMatrix(mat):
+                            elif group.isLexMinAdjacencyMatrixSage(mat):
                                 temp.append(mat)            
 
         intermidMatrices = temp
@@ -206,7 +210,7 @@ def __main__():
     # nx.draw(nx.from_numpy_array(createStandardCentralDigraph(4), create_using=nx.DiGraph))
     # plt.show()
     # ls = genUPPMatrices(3)
-    ls2 = genUPPByBlockDFS(4)
+    ls2 = genUPPByBlockDFS(3)
     print(len(ls2))
     print(ls2)
     # print(ls[-6:])
