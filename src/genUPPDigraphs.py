@@ -143,10 +143,10 @@ def genUPPByBlockDFS(k: int) -> list[np.ndarray]:
     colEdgeCondition = [1 for i in range(k)]
 
     for i in range(1, k):
-        print(len(intermidMatrices))
-        if i == k-1:
-            np.savez('./intermid34', *intermidMatrices)
-        group = PreCompInducedPermGroup(i * (k + 1))
+        # print(len(intermidMatrices))
+        # if i == k-1:
+        #     np.savez('./intermid34', *intermidMatrices)
+        group = PreCompInducedPermGroup((i + 1) * k)
 
         # the (i+1)x(i+1) submatrices
         temp = []
