@@ -206,6 +206,56 @@ def genUPPByBlockDFS(k: int) -> list[np.ndarray]:
 
     return intermidMatrices
 
+def genProductTables(k: int) -> list[list]:
+    '''
+    Generates all possible product tables for the set S={0..k-1} for which x*0=0 and unique z such that x*y=z. These are the underlying structure of Knuthian systems.
+    '''
+
+    firstRow = np.array([i for i in range(k)])
+    out = []
+
+    # Generate k-1 permutations of {1..k-1}
+    allPerms = list(itertools.permutations(range(1,k)))
+    permSubsets = list(itertools.product(range(len(allPerms)), repeat=k-1))
+    for permSubset in permSubsets:
+        perms = np.array([[0] + list(allPerms[i]) for i in permSubset])
+        
+        # Create multiplication table
+        productTable = np.block([[firstRow],[perms]])
+        out.append(productTable)
+    return out
+
+def makeKnuthianDigraph(table: np.ndarray) -> nx.DiGraph:
+    '''
+    Return the (central) digraph of the Knuthian system defined by the given product table
+    '''
+
+    k = table.shape[0]
+    elems = list(itertools.product(range(k), range(k)))
+
+    D = nx.DiGraph()
+    D.add_nodes_from(elems)
+    D.add_edges_from([(e1, e2) for e1 in elems for e2 in elems if (e1[1] == e2[0] and e2[1] != 0) or (e2[1] == 0 and table[e1[0],e1[1]] == e2[0])])
+
+    return D
+
+def getKnuthianAdjMatrix(table: np.ndarray) -> np.ndarray:
+    '''
+    Return the adjacency matrix of the Knuthian system defined by the given product table
+    '''
+
+    return nx.to_numpy_array(makeKnuthianDigraph(table))
+
+def areKnuthianIsomorphic(table1: np.ndarray, table2: np.ndarray) -> bool:
+    '''
+    Checks whether two product tables are isomorphic.
+    
+    By result in https://doi.org/10.1016/S0021-9800(70)80032-1, two Knuthian systems are isomorphic iff the underlying product tables are isomorphic (modulo other conditions).
+    '''
+
+    # STUB, do not see anything better than checking all k! possible permutations of the elements of k right now
+    return False
+
 def __main__():
     # nx.draw(nx.from_numpy_array(createStandardCentralDigraph(4), create_using=nx.DiGraph))
     # plt.show()

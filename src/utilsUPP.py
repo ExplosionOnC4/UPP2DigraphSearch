@@ -137,3 +137,18 @@ def isLexMinAdjacencyMatrix(adj: np.ndarray) -> bool:
     n = np.shape(adj)[0]
     proc = subprocess.run(args=['sh', 'lexMin.sh', f'{set}', f'{n}'], capture_output=True, text=True)
     return proc.stdout.strip() == 'true'
+
+def filterIsomorphs(ls: list[np.ndarray]) -> list[np.ndarray]:
+    '''
+    For an input list of adjacency matrices, returns the list with isomorphs removed.
+    '''
+
+    out = []
+    certs = set()
+    for adj in ls:
+        cert = nauty.certificate(createNautyGraphFromAdjMatrix(adj))
+        if cert not in certs:
+            out.append(adj)
+            certs.add(cert)
+
+    return out
