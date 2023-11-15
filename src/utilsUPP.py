@@ -105,7 +105,7 @@ def recoverGraphFromNautyCert(cert, numVerts: int) -> nauty.Graph:
 
 def getSetRepresentationAdjacencyMatrix(adj: np.ndarray) -> list[int]:
     '''
-    Get the set representation of graph by labelling the entries of the adjacency matrix from 1 to n. Returns the set containing the non-zero entries.
+    Get the set representation of graph by labelling the entries of the adjacency matrix from 1 to n^2. Returns the set containing the non-zero entries.
 
     For use with induced permutation of S_{n} on {1, ..., n} x {1, ..., n}
     '''
@@ -152,3 +152,10 @@ def filterIsomorphs(ls: list[np.ndarray]) -> list[np.ndarray]:
             certs.add(cert)
 
     return out
+
+def convertBinaryToSetRepresentation(binRep: str) -> list[int]:
+    '''
+    Helper function to read in orderedComplete4, convert binary representation of digraph to its set representation
+    '''
+
+    return [i+1 for i in range(len(binRep)) if binRep[i] == '1']
