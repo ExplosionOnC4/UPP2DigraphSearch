@@ -89,6 +89,9 @@ def createNautyGraphFromAdjMatrix(adj: np.ndarray) -> nauty.Graph:
     G = nx.DiGraph(adj)
     return nauty.Graph(number_of_vertices=G.order(), directed=True, adjacency_dict=nx.to_dict_of_lists(G))
 
+def recoverAdjMatrixFromNautyGraph(G: nauty.Graph) -> np.ndarray:
+    return nx.to_numpy_array(nx.from_dict_of_lists(G.adjacency_dict, create_using=nx.DiGraph))
+
 def recoverGraphFromNautyCert(cert, numVerts: int) -> nauty.Graph:
     '''
     Recovers the Nauty graph from its binary string form given by nauty.certificate
