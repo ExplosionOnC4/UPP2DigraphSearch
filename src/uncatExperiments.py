@@ -1,10 +1,11 @@
-# File to store research directions and random experiments/ideas before being categorised.
+# File to store research directions and random experiments/ideas before being categorised. Expect large commented out sections for past calculations
 
 import numpy as np
 import os
 import ast
 import collections
-from itertools import combinations
+import math
+from itertools import combinations, permutations
 from readDataFiles import *
 from utilsUPP import *
 from switchingsUPP import *
@@ -25,7 +26,58 @@ def getInducedUndirectedCanonAdj(adj: np.ndarray) -> np.ndarray:
     D = nx.relabel_nodes(nx.DiGraph(adj), perm)
     return nx.to_numpy_array(D, nodelist=[*range(np.shape(adj)[0])])
 
+def findAllSubcentralDigraphs(adj: np.ndarray) -> list[np.ndarray]:
+    '''
+    For a CDG, return a list of all of its subcentral digraphs. Uses necessary condition from https://doi.org/10.1016/j.jcta.2011.03.009.
+    '''
+
+    k = int(math.sqrt(np.shape(adj)[0]))
+
+    # the necessary condition, if a CDG is reducible then it satisfies the neighbourhood condition.
+    neighbourhoodCond = False
+    loops = {i for i in range(np.shape(adj)[0]) if int(adj[i][i]) == 1}
+    rowPartitions = partitionEqualColIndices(adj)
+    colPartitions = paritionEqualRowIndices(adj)
+    for part in rowPartitions.values():
+        if len(set(part).difference(loops)) >= k - 1:
+            neighbourhoodCond = True
+    for part in colPartitions.values():
+        if len(set(part).difference(loops)) >= k - 1:
+            neighbourhoodCond = True
+    if not neighbourhoodCond:
+        return []
+
+    SCDGs = []
+
+    # Two approaches, either start with k-1 loop vertices and see if UPP2 closure contains the k-th one,
+    # OR delete every choice of 2k-1 row/columns from original k-CDG (=> O(k*[k^2-1 C 2k-2]))
+    # Approach 1 seems much faster, since two loop vertices cannot be adjacent, it should find all vertices in closure relatively quickly
+    for i in loops:
+        lastVertexSet = set()
+        vertexSet = loops.difference({i})
+        while lastVertexSet != vertexSet and i not in vertexSet:
+            lastVertexSet = vertexSet.copy()
+            intermidVerts = set()
+            # for any perm of 2 elements from vertex set, add intermid vertex (cartesian product to be completely safe but should be unnecessary)
+            for v1, v2 in permutations(vertexSet, 2):
+                # TODO add utility function that give in/outneighbourhoods and take intersection
+                intermidVerts.update([i for i in range(np.shape(adj)[0]) if adj[v1,:][i] == 1 and adj[:,v2][i] == 1])
+            vertexSet.update(intermidVerts)
+        if i not in vertexSet:
+            # transform back into adjacency
+            scdg = np.zeros((len(vertexSet), len(vertexSet)))
+            for i, vi in enumerate(vertexSet):
+                for j, vj in enumerate(vertexSet):
+                    scdg[i][j] = adj[vi][vj]
+            SCDGs.append(scdg)
+    
+    return SCDGs
+
 def calcAverageCommonNeighboursLoopVertices(adj: np.ndarray) -> tuple:
+    '''
+    Idea for probabilistic proof of conjecture described in getInducedUndirectedCanonAdj(). Didn't work.
+    '''
+
     inAverage, outAverage, i = 0, 0, 0
     loops = [i for i in range(np.shape(adj)[0]) if int(adj[i][i]) == 1]
     for l1, l2 in combinations(loops, 2):
@@ -97,7 +149,9 @@ if __name__ == '__main__':
     # print(ls[2])
 
     # there are 1299 max rank 4-CDGs
-    print(len([i for i in range(len(ls)) if np.linalg.matrix_rank(ls[i]) == 8]))
+    # print(len([i for i in range(len(ls)) if np.linalg.matrix_rank(ls[i]) == 8]))
+
+    print([i for i in range(len(ls)) if len(findAllSubcentralDigraphs(ls[i])) == 0])
 
     pass
 
