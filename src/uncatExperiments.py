@@ -1,14 +1,13 @@
 # File to store research directions and random experiments/ideas before being categorised. Expect large commented out sections for past calculations
 
 import numpy as np
-import os
-import ast
 import collections
-import math
+import pynauty as nauty
 from itertools import combinations, permutations
 from readDataFiles import *
 from utilsUPP import *
 from switchingsUPP import *
+import matplotlib.pyplot as plt
 
 def getInducedUndirectedCanonAdj(adj: np.ndarray) -> np.ndarray:
     '''
@@ -21,33 +20,22 @@ def getInducedUndirectedCanonAdj(adj: np.ndarray) -> np.ndarray:
 
     undirectedAdj = nx.to_numpy_array(nx.DiGraph(adj).to_undirected())
     relabel = nauty.canon_label(createNautyGraphFromAdjMatrix(undirectedAdj))
-    perm = dict(zip(range(np.shape(adj)[0]), relabel))
+    perm = dict(zip(relabel, range(np.shape(adj)[0])))
     # perm = dict(zip(relabel, np.roll(relabel, -1)))
     D = nx.relabel_nodes(nx.DiGraph(adj), perm)
     return nx.to_numpy_array(D, nodelist=[*range(np.shape(adj)[0])])
 
 def findAllSubcentralDigraphs(adj: np.ndarray) -> list[np.ndarray]:
     '''
-    For a CDG, return a list of all of its subcentral digraphs. Uses necessary condition from https://doi.org/10.1016/j.jcta.2011.03.009.
+    For a CDG, return a list of all of its subcentral digraphs.
     '''
 
-    k = int(math.sqrt(np.shape(adj)[0]))
-
-    # the necessary condition, if a CDG is reducible then it satisfies the neighbourhood condition.
-    neighbourhoodCond = False
-    loops = {i for i in range(np.shape(adj)[0]) if int(adj[i][i]) == 1}
-    rowPartitions = partitionEqualColIndices(adj)
-    colPartitions = paritionEqualRowIndices(adj)
-    for part in rowPartitions.values():
-        if len(set(part).difference(loops)) >= k - 1:
-            neighbourhoodCond = True
-    for part in colPartitions.values():
-        if len(set(part).difference(loops)) >= k - 1:
-            neighbourhoodCond = True
-    if not neighbourhoodCond:
+    # a necessary condition, if a CDG is reducible then it satisfies the neighbourhood condition.
+    if not satisfiesNeighbourhoodCondition(adj):
         return []
 
     SCDGs = []
+    loops = getLoopVerts(adj)
 
     # Two approaches, either start with k-1 loop vertices and see if UPP2 closure contains the k-th one,
     # OR delete every choice of 2k-1 row/columns from original k-CDG (=> O(k*[k^2-1 C 2k-2]))
@@ -59,6 +47,7 @@ def findAllSubcentralDigraphs(adj: np.ndarray) -> list[np.ndarray]:
             lastVertexSet = vertexSet.copy()
             intermidVerts = set()
             # for any perm of 2 elements from vertex set, add intermid vertex (cartesian product to be completely safe but should be unnecessary)
+            # IDEA have list of VxV, if both elements are in vertex set then find intermid vertex and delete from VxV to avoid recompute.
             for v1, v2 in permutations(vertexSet, 2):
                 # TODO add utility function that give in/outneighbourhoods and take intersection
                 intermidVerts.update([i for i in range(np.shape(adj)[0]) if adj[v1,:][i] == 1 and adj[:,v2][i] == 1])
@@ -95,46 +84,81 @@ if __name__ == '__main__':
 
     # major = readMajorGk(4, keepCerts=True)
     # certList = list(map(lambda adj : nauty.certificate(createNautyGraphFromAdjMatrix(adj)), readOrderedComplete4()))
-    # print([i for i in range(len(certList)) if certList[i] not in major])
+    # nonMajorCDGs = [i for i in range(len(certList)) if certList[i] not in major]
+    # print(nonMajorCDGs)
 
     # The reverses of the 4-CDGs
     # The 34 self-reverse 4-CDGs are
     # ['185', '850', '907', '942', '1696', '2223', '2300', '2310', '2353', '2465', '2466', '2514', '2517', '2522', '2649', '2677', '2678',
     # '2728', '2731', '2737', '2739', '2816', '3150', '3257', '3263', '3265', '3287', '3378', '3379', '3380', '3469', '3478', '3488', '3491']
 
-    # reverseList = [np.transpose(adj) for adj in readOrderedComplete4()]
-    # reverseCertList = list(map(lambda adj : nauty.certificate(createNautyGraphFromAdjMatrix(adj)), reverseList))
-    # certList = list(map(lambda adj : nauty.certificate(createNautyGraphFromAdjMatrix(adj)), readOrderedComplete4()))
-    # reverseDict = {}
-    # for i in range(len(certList)):
-    #     reverseDict[i] = reverseCertList.index(certList[i])
-    # selfReverseList = [i for i in reverseDict.keys() if reverseDict[i] == i]
+    reverseList = [np.transpose(adj) for adj in readOrderedComplete4()]
+    reverseCertList = list(map(lambda adj : nauty.certificate(createNautyGraphFromAdjMatrix(adj)), reverseList))
+    certList = list(map(lambda adj : nauty.certificate(createNautyGraphFromAdjMatrix(adj)), readOrderedComplete4()))
+    reverseDict = {}
+    for i in range(len(certList)):
+        reverseDict[i] = reverseCertList.index(certList[i])
+    selfReverseList = [i for i in reverseDict.keys() if reverseDict[i] == i]
     # print(selfReverseList)
 
     # 4-CDGs which have equivalent underlying undirected graph
     # By underlying directed digraph, we mean removing digons, as keeping digons in a multigraph appears to produce only the original CDG and its reverse.
+    # !! Most self-reverse 4-CDGs lie in the same equivalence classes as other self-reverse 4-CDGs !!
     # Frequency information (key is number of times a specific undirected graph appears, value is how many undirected graphs appear key times):
     # Counter({'4': 193, '8': 106, '2': 76, '12': 37, '6': 23, '24': 18, '16': 10, '10': 7, '28': 5, '22': 3, '32': 3, '3': 3, '1': 3, '7': 2, '18': 1, '56': 1, '14': 1, '40': 1, '20': 1})
 
-    # undirectedList = [nx.DiGraph(adj).to_undirected() for adj in readOrderedComplete4()]
-    # undirectedCertList = list(map(lambda adj : nauty.certificate(createNautyGraphFromAdjMatrix(adj)), undirectedList))
-    # undirectedDict = {}
-    # for i, cert in enumerate(undirectedCertList):
-    #     if cert in undirectedDict:
-    #         undirectedDict[cert].append(i)
-    #     else:
-    #         undirectedDict[cert] = [i]
-    # print('\n'.join([str(i) for i in undirectedDict.values()]))
+    undirectedList = [nx.DiGraph(adj).to_undirected() for adj in readOrderedComplete4()]
+    undirectedCertList = list(map(lambda adj : nauty.certificate(createNautyGraphFromAdjMatrix(adj)), undirectedList))
+    undirectedDict = {}
+    for i, cert in enumerate(undirectedCertList):
+        if cert in undirectedDict:
+            # filter out reverses as they always lie in the same equivalence class
+            if reverseDict[i] not in undirectedDict[cert]:
+                undirectedDict[cert].append(i)
+        else:
+            undirectedDict[cert] = [i]
+    # print('\n'.join([str(i) for i in undirectedDict.values()])) 
+    # print('\n'.join([str(i) for i in undirectedDict.values() if set(i).intersection(set(selfReverseList))]))
     # print('\n'.join([str(len(i)) for i in undirectedDict.values()]))
     # print(collections.Counter([str(len(i)) for i in undirectedDict.values()]))
     
     # print(collections.Counter([str(undirectedDict[undirectedCertList[i]]) for i in selfReverseList]))
 
-    # print(ls[0])
-    # print()
-    # print(ls[reverseDict[0]])
-    # print()
-    # print(getInducedUndirectedCanonAdj(ls[0]) + getInducedUndirectedCanonAdj(ls[reverseDict[0]]))
+    # Finding what arcs where flipped between 4-CDGs lying in the same undirected equivalence class
+    flippedSubgraphs = {}
+    for cert, eqClass in undirectedDict.items():
+        if len(eqClass) >= 2:
+            for i1, i2 in combinations(eqClass, 2):
+                # on comparison, select the CDG or reverse that leaves a smaller number of flipped arcs.
+                flips1 = np.clip(getInducedUndirectedCanonAdj(ls[i1]) - getInducedUndirectedCanonAdj(ls[i2]), a_min=0, a_max=None)
+                flips2 = np.clip(getInducedUndirectedCanonAdj(ls[i1]) - getInducedUndirectedCanonAdj(ls[reverseDict[i2]]), a_min=0, a_max=None)
+                flippedComponent = flips1 if np.sum(flips1) <= np.sum(flips2) else flips2
+                cdgIndices = (i1, i2) if np.sum(flips1) <= np.sum(flips2) else (i1, reverseDict[i2])
+                if cert in flippedSubgraphs:
+                    flippedSubgraphs[cert].append((nx.from_numpy_array(flippedComponent, create_using=nx.DiGraph), cdgIndices))
+                else:
+                    flippedSubgraphs[cert] = [(nx.from_numpy_array(flippedComponent, create_using=nx.DiGraph), cdgIndices)]
+    
+    connected = []
+    for val in flippedSubgraphs.values():
+        for s, iis in val:
+            if nx.number_strongly_connected_components(s) == 1:
+                connected.append(iis)
+    print(connected)
+
+    # Drawing flipped components
+    # for _, v in flippedSubgraphs.items():
+    #     for subgraph, indices in v:
+            # if indices in connected:
+                # plt.figure()
+                # g = np.clip(getInducedUndirectedCanonAdj(ls[indices[0]]) - getInducedUndirectedCanonAdj(ls[reverseDict[indices[1]]]), a_min=0, a_max=None)
+                # nx.draw(nx.from_numpy_array(g, create_using=nx.DiGraph), pos=nx.circular_layout(nx.from_numpy_array(g)), with_labels=True)
+
+                # plt.figure()
+                # plt.title(f'Flipped arc subgraph of 4-CDG {indices[0]} and {indices[1]}:')
+                # nx.draw(subgraph, pos=nx.circular_layout(subgraph), with_labels=True)
+                # plt.show()
+
 
     # productList = [np.matmul(adj, np.transpose(adj)) for adj in ls]
     # print(productList[1])
@@ -149,9 +173,23 @@ if __name__ == '__main__':
     # print(ls[2])
 
     # there are 1299 max rank 4-CDGs
-    # print(len([i for i in range(len(ls)) if np.linalg.matrix_rank(ls[i]) == 8]))
+    # maxRanks = [i for i in range(len(ls)) if np.linalg.matrix_rank(ls[i]) == 8]
+    # print(len(maxRanks))
 
-    print([i for i in range(len(ls)) if len(findAllSubcentralDigraphs(ls[i])) == 0])
+    # there are 328 irreducible 4-CDGs, and removing neighbourhood condition does not yield more
+    # Further, there is exactly one 4-CDG with 4 subCDGs, being the standard one (1-index: 3492)
+    # Curtis et. al. managed to prove in https://cklixx.people.wm.edu/reu02.pdf that the standard k-CDG always has k subCDGS
+    # CONJECTURE: above is an iff.
+    # irreducible4CDGs = [i for i in range(len(ls)) if len(findAllSubcentralDigraphs(ls[i])) == 0]
+    # print(len(irreducible4CDGs))
+    # print(len(nonMajorCDGs))
+    # print(set(nonMajorCDGs).difference(set(irreducible4CDGs)))
+    # print(len(set(irreducible4CDGs).difference(set(maxRanks))))
+
+    # 328 CDGs do not satisfy the neighbourhood condition, which are all exactly the irreducible ones.
+    # CONJECTURE: NC is necessary and sufficient to be reducible
+    # nonSFC = [i for i in range(len(ls)) if not satisfiesNeighbourhoodCondition(ls[i])]
+    # print(len(nonSFC))
 
     pass
 
