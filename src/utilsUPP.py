@@ -1,6 +1,7 @@
 import numpy as np
 import networkx as nx
 import pynauty as nauty
+import math
 import subprocess
 
 def checkMostSinglePath(adj: np.ndarray) -> bool:
@@ -9,6 +10,13 @@ def checkMostSinglePath(adj: np.ndarray) -> bool:
     '''
 
     return np.max(np.linalg.matrix_power(adj, 2)) <= 1
+
+def getLoopVerts(adj: np.ndarray) -> list[int]:
+    '''
+    Returns the list of indices of all looped vertices in the graph.
+    '''
+
+    return [i for i in range(np.shape(adj)[0]) if int(adj[i][i]) == 1]
 
 def createRowVectorFromIndexList(k: int, ls: list) -> np.ndarray:
     '''
@@ -39,7 +47,7 @@ def createBasisBlockMatrix(i: int, k: int) -> np.ndarray:
     adj[i] = np.ones(k)
     return adj
 
-def paritionEqualRowIndices(adj: np.ndarray) -> map:
+def partitionEqualRowIndices(adj: np.ndarray) -> map:
     '''
     Partitions the set of row indices into equivalence classes based on equality, i.e. two rows will lie in the same class if they are equal
     '''
@@ -59,14 +67,14 @@ def partitionEqualColIndices(adj: np.ndarray) -> map:
     Partitions the set of column indices into equivalence classes based on equality, i.e. two rows will lie in the same class if they are equal
     '''
 
-    return paritionEqualRowIndices(np.transpose(adj))
+    return partitionEqualRowIndices(np.transpose(adj))
 
 def containsIdenticalRows(adj: np.ndarray) -> bool:
     '''
     Checks that there exits at least two rows in the adjacency matrix that are equal
     '''
 
-    parts = paritionEqualRowIndices(adj)
+    parts = partitionEqualRowIndices(adj)
     for _, v in parts.items():
         if len(v) > 1:
             return True
@@ -81,6 +89,30 @@ def containsIdenticalCols(adj: np.ndarray) -> bool:
 
     return containsIdenticalRows(np.transpose(adj))
 
+def satisfiesNeighbourhoodCondition(adj: np.ndarray) -> bool:
+    '''
+    Checks if a k-CDG satisfies the neighbourhood condition, as described in Propostion 5 of https://doi.org/10.1016/j.jcta.2011.03.009.
+
+    A k-CDG satisfies the neighbourhood condition if it contains a set of k-1 non-loop vertices which either all share the same inneighbourhood or outneighbourhood.
+
+    A necessary condition for a k-CDG to be reducible.
+    '''
+
+    k = int(math.sqrt(np.shape(adj)[0]))
+    neighbourhoodCond = False
+    loops = {i for i in range(np.shape(adj)[0]) if int(adj[i][i]) == 1}
+    rowPartitions = partitionEqualColIndices(adj)
+    colPartitions = partitionEqualRowIndices(adj)
+    for part in rowPartitions.values():
+        if len(set(part).difference(loops)) >= k - 1:
+            neighbourhoodCond = True
+            break
+    for part in colPartitions.values():
+        if len(set(part).difference(loops)) >= k - 1:
+            neighbourhoodCond = True
+            break
+
+    return neighbourhoodCond
 
 def convertAdjMatrixToNeighbourList(adj: np.ndarray) -> dict[list]:
     return nx.to_dict_of_lists(nx.DiGraph(adj))

@@ -1,7 +1,6 @@
 import numpy as np
 import os
 import ast
-import collections
 from utilsUPP import *
 
 baseDir = os.path.split(os.path.dirname(__file__))[0]
