@@ -132,13 +132,26 @@ if __name__ == '__main__':
                 # on comparison, select the CDG or reverse that leaves a smaller number of flipped arcs.
                 flips1 = np.clip(getInducedUndirectedCanonAdj(ls[i1]) - getInducedUndirectedCanonAdj(ls[i2]), a_min=0, a_max=None)
                 flips2 = np.clip(getInducedUndirectedCanonAdj(ls[i1]) - getInducedUndirectedCanonAdj(ls[reverseDict[i2]]), a_min=0, a_max=None)
-                flippedComponent = flips1 if np.sum(flips1) <= np.sum(flips2) else flips2
-                cdgIndices = (i1, i2) if np.sum(flips1) <= np.sum(flips2) else (i1, reverseDict[i2])
+                # need this in case second CDG is self-reverse
+                flips3 = np.clip(getInducedUndirectedCanonAdj(ls[reverseDict[i1]]) - getInducedUndirectedCanonAdj(ls[i2]), a_min=0, a_max=None)
+                # flippedComponent = flips1 if np.sum(flips1) <= np.sum(flips2) else flips2
+                # flippedComponent = [flip for flip in [flips1, flips2, flips3] if np.sum(flip) == min(np.sum(flips1), np.sum(flips2), np.sum(flips3))][0]
+                # cdgIndices = (i1, i2) if np.sum(flips1) <= np.sum(flips2) else (i1, reverseDict[i2])
+                if np.sum(flips1) == min(np.sum(flips1), np.sum(flips2), np.sum(flips3)):
+                    flippedComponent = flips1
+                    cdgIndices = (i1, i2)
+                elif np.sum(flips2) == min(np.sum(flips1), np.sum(flips2), np.sum(flips3)):
+                    flippedComponent = flips2
+                    cdgIndices = (i1, reverseDict[i2])
+                else:
+                    flippedComponent = flips3
+                    cdgIndices = (reverseDict[i1], i2)
                 if cert in flippedSubgraphs:
                     flippedSubgraphs[cert].append((nx.from_numpy_array(flippedComponent, create_using=nx.DiGraph), cdgIndices))
                 else:
                     flippedSubgraphs[cert] = [(nx.from_numpy_array(flippedComponent, create_using=nx.DiGraph), cdgIndices)]
     
+    # !! The flipped arcs subgraph is connected only if both the CDGs in the same undirected equivalence class are self-reverse !!
     connected = []
     for val in flippedSubgraphs.values():
         for s, iis in val:
