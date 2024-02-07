@@ -130,6 +130,7 @@ if __name__ == '__main__':
         if len(eqClass) >= 2:
             for i1, i2 in combinations(eqClass, 2):
                 # on comparison, select the CDG or reverse that leaves a smaller number of flipped arcs.
+                # TODO consider drawing the -1 edges in a different colour instead of zeroing out
                 flips1 = np.clip(getInducedUndirectedCanonAdj(ls[i1]) - getInducedUndirectedCanonAdj(ls[i2]), a_min=0, a_max=None)
                 flips2 = np.clip(getInducedUndirectedCanonAdj(ls[i1]) - getInducedUndirectedCanonAdj(ls[reverseDict[i2]]), a_min=0, a_max=None)
                 # need this in case second CDG is self-reverse
@@ -157,20 +158,31 @@ if __name__ == '__main__':
         for s, iis in val:
             if nx.number_strongly_connected_components(s) == 1:
                 connected.append(iis)
-    print(connected)
+    # print(connected)
 
     # Drawing flipped components
-    # for _, v in flippedSubgraphs.items():
-    #     for subgraph, indices in v:
-            # if indices in connected:
-                # plt.figure()
-                # g = np.clip(getInducedUndirectedCanonAdj(ls[indices[0]]) - getInducedUndirectedCanonAdj(ls[reverseDict[indices[1]]]), a_min=0, a_max=None)
-                # nx.draw(nx.from_numpy_array(g, create_using=nx.DiGraph), pos=nx.circular_layout(nx.from_numpy_array(g)), with_labels=True)
+    for _, v in flippedSubgraphs.items():
+        for subgraph, indices in v:
+            if indices not in connected:
+                plt.figure()
+                plt.title(f'Flipped arc subgraph of 4-CDG {indices[0]} and {indices[1]}:')
+                showDigons = True
 
-                # plt.figure()
-                # plt.title(f'Flipped arc subgraph of 4-CDG {indices[0]} and {indices[1]}:')
-                # nx.draw(subgraph, pos=nx.circular_layout(subgraph), with_labels=True)
-                # plt.show()
+                if showDigons:
+                    # Very hacky section, probably doesn't work for general k-CDGs
+                    g1, g2 = (nx.from_numpy_array(getInducedUndirectedCanonAdj(ls[i]), create_using=nx.DiGraph) for i in indices)
+                    for i, (g, c, r) in enumerate([(g1, 'red', 0.1), (g2, 'blue', 0.15)]):
+                        digonSubgraph = nx.DiGraph()
+                        digonSubgraph.add_nodes_from(subgraph)
+                        digons = [(u, v) for u, v in g.edges if (v, u) in g.edges and u != v]
+                        digonSubgraph.add_edges_from(digons, color=c)
+                        colors = [digonSubgraph[u][v]['color'] for u,v in digonSubgraph.edges]
+                        nx.draw(digonSubgraph, pos=nx.circular_layout(subgraph), edge_color=colors, with_labels=True, connectionstyle=f"arc3,rad={r}")
+                        plt.text(-1.4, 1-i/5, f"{c}: {indices[i]}")
+
+                # TODO make these edges thicker if showDigons is set to true
+                nx.draw(subgraph, pos=nx.circular_layout(subgraph), with_labels=True)
+                plt.show()
 
 
     # productList = [np.matmul(adj, np.transpose(adj)) for adj in ls]
