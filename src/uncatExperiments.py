@@ -14,8 +14,6 @@ def getInducedUndirectedCanonAdj(adj: np.ndarray) -> np.ndarray:
     For a given CDG, return an undirected graph where the edge set is the arc set with di-gons being represented by a single edge.
     
     We conjecture if di-gons are represented by a multigraph then there is exactly two possible base CDGs, the original and its reverse.
-
-    TODO fix, very broken
     '''
 
     undirectedAdj = nx.to_numpy_array(nx.DiGraph(adj).to_undirected())
@@ -161,6 +159,10 @@ if __name__ == '__main__':
     # print(connected)
 
     # Drawing flipped components
+    # Nearly every single pair that does not yield a strongly connected flipped subCDG is flipped only on digons
+    # (?=>?) there exists a switch operation for digons where u1 <-> v1 and u2 <-> v2 becomes u1 <-> u2 and v1 <-> v2
+    # There are some exception which have additional flipped arcs between such a digon switch.
+    # TODO find conditions for when a digon switch is possible
     for _, v in flippedSubgraphs.items():
         for subgraph, indices in v:
             if indices not in connected:
