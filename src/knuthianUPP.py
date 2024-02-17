@@ -76,7 +76,7 @@ def genSymmetricGroupMaps(k: int) -> list[dict]:
     Return a list containing every element of S_k, represented as a map.
     '''
 
-    return [dict(zip([i for i in range(1, k)], perm)) for perm in itertools.permutations([i for i in range(1, k)])]
+    return [dict(zip([i for i in range(1, k + 1)], perm)) for perm in itertools.permutations([i for i in range(1, k + 1)])]
 
 def areKnuthianIsomorphic(table1: np.ndarray, table2: np.ndarray) -> bool:
     '''
@@ -90,7 +90,7 @@ def areKnuthianIsomorphic(table1: np.ndarray, table2: np.ndarray) -> bool:
     # Do not see anything better than checking all k! possible permutations of the elements of k right now
     if np.shape(table1) != np.shape(table2):
         return False
-    symmetricGroup = genSymmetricGroupMaps(len(table1))
+    symmetricGroup = genSymmetricGroupMaps(len(table1) - 1)
     for sigma in symmetricGroup:
         if np.array_equal(applySymmetricActionOnSubtable(getMultiplicationSubtable(table1), sigma), getMultiplicationSubtable(table2)):
             return True
@@ -119,7 +119,7 @@ def calcNumNonIsomorphKnuthianDigraphs(k: int) -> int:
     # For some reason if left as map object return exactly (k-1)!^{k-2} which is exactly the assumption that average |X^g|=1
     # TODO make lazy to not use so much memory
     subtables = list(map(getMultiplicationSubtable, genProductTables(k)))
-    symmetricGroup = genSymmetricGroupMaps(k)
+    symmetricGroup = genSymmetricGroupMaps(k - 1)
     sum = 0
     for sigma in symmetricGroup:
         sum += len(findFixedSubtablesOfPermutation(sigma, subtables))
@@ -131,7 +131,7 @@ def getSymmetricGroupOrbitOfSubtable(subtable: np.ndarray) -> list[np.ndarray]:
     '''
 
     orbit = []
-    symmetricGroup = genSymmetricGroupMaps(len(subtable) + 1)
+    symmetricGroup = genSymmetricGroupMaps(len(subtable))
     for sigma in symmetricGroup:
         image = applySymmetricActionOnSubtable(subtable, sigma)
         if not any((image == x).all() for x in orbit):
@@ -169,5 +169,6 @@ def findAllOrbitsSymmetricGroupSubtables(k: int) -> list[list]:
     return orbitsSet
 
 if __name__ == '__main__':
-    print(len(findAllOrbitsSymmetricGroupSubtables(4)))
+    # print(len(findAllOrbitsSymmetricGroupSubtables(4)))
+    # print(calcNumNonIsomorphKnuthianDigraphs(5))
     pass
