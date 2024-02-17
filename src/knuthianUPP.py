@@ -1,17 +1,15 @@
 import itertools
 import numpy as np
 import networkx as nx
+from collections.abc import Generator
 from utilsUPP import *
 
-def genProductTables(k: int) -> list[np.ndarray]:
+def genProductTables(k: int) -> Generator[np.ndarray, None, None]:
     '''
-    Generates all possible product tables for the set S={0..k-1} for which x*0=0 and unique z such that x*y=z. These are the underlying structure of Knuthian systems.
-
-    # TODO make lazy
+    Lazily generates all possible product tables for the set S={0..k-1} for which x*0=0 and unique z such that x*y=z. These are the underlying structure of Knuthian systems.
     '''
 
     firstRow = np.array([i for i in range(k)])
-    out = []
 
     # Generate k-1 permutations of {1..k-1}
     allPerms = list(itertools.permutations(range(1,k)))
@@ -21,8 +19,7 @@ def genProductTables(k: int) -> list[np.ndarray]:
         
         # Create multiplication table
         productTable = np.block([[firstRow],[perms]])
-        out.append(productTable)
-    return out
+        yield productTable
 
 def makeKnuthianDigraph(table: np.ndarray) -> nx.DiGraph:
     '''
@@ -68,7 +65,7 @@ def applySymmetricActionOnSubtable(subtable: np.ndarray, perm: dict) -> np.ndarr
     newTable = np.copy(subtable)
     for i in range(len(subtable)):
         for j in range(len(subtable[0])):
-            newTable[perm[i+1]-1][perm[j+1]-1] = perm[subtable[i][j]]  # As S_n does not include 0
+            newTable[perm[i+1]-1][perm[j+1]-1] = perm[subtable[i][j]]  # As S_n does not include 0 as an index
     return newTable
 
 def genSymmetricGroupMaps(k: int) -> list[dict]:
@@ -101,10 +98,12 @@ def findFixedSubtablesOfPermutation(perm: dict, subtables=None) -> list[np.ndarr
     Returns all of the product subtables which are fixed by the given element of S_{k-1}
 
     Slow as purely bruteforce
+
+    TODO make an actual algorithm
     '''
 
     if not subtables:
-        subtables = list(map(getMultiplicationSubtable, genProductTables(len(perm) + 1)))
+        subtables = map(getMultiplicationSubtable, genProductTables(len(perm) + 1))
     fixed = []
     for subtable in subtables:
         if np.array_equal(applySymmetricActionOnSubtable(subtable, perm), subtable):
@@ -117,7 +116,7 @@ def calcNumNonIsomorphKnuthianDigraphs(k: int) -> int:
     '''
 
     # For some reason if left as map object return exactly (k-1)!^{k-2} which is exactly the assumption that average |X^g|=1
-    # TODO make lazy to not use so much memory
+    # TODO make findFixedSubtables not bruteforce to avoid precomputing subtables
     subtables = list(map(getMultiplicationSubtable, genProductTables(k)))
     symmetricGroup = genSymmetricGroupMaps(k - 1)
     sum = 0
@@ -138,6 +137,21 @@ def getSymmetricGroupOrbitOfSubtable(subtable: np.ndarray) -> list[np.ndarray]:
             orbit.append(image)
     return orbit
 
+def findIndexNumpyArrInList(ls: list[np.ndarray], arr: np.ndarray, default=None) -> int:
+    '''
+    Finds first instance of (numpy array) `arr` in `ls` and returns its index.
+
+    Can pass a default to return in case `arr` not in `ls`. Otherwise throws StopIteration
+    '''
+
+    matches = [i for i, x in enumerate(ls) if np.array_equal(arr, x)]
+    if len(matches) == 0 and default is None:
+        raise(StopIteration)
+    return next(iter(matches), default)
+
+def doesNumpyArrayContainArr(ls: list[np.ndarray], arr: np.ndarray) -> bool:
+    return findIndexNumpyArrInList(ls, arr, default=-1) != -1
+
 def removeNumpyArrFromList(ls: list[np.ndarray], arr: np.ndarray) -> None:
     '''
     Helper function, removes first instance of (numpy array) `arr` in `ls`.
@@ -145,7 +159,7 @@ def removeNumpyArrFromList(ls: list[np.ndarray], arr: np.ndarray) -> None:
     :throw StopIteration if `arr` not in `ls`
     '''
 
-    index = next((i for i, x in enumerate(ls) if np.array_equal(arr, x)))
+    index = findIndexNumpyArrInList(ls, arr)
     ls.pop(index)
     return 
 
@@ -154,18 +168,25 @@ def findAllOrbitsSymmetricGroupSubtables(k: int) -> list[list]:
     Returns the orbits of the set of product subtables under the symmetric group action described in https://cklixx.people.wm.edu/reu02.pdf.
 
     :return list for which each sublist is an orbit.
-
-    # TODO will break if subtables changed to lazy eval
     '''
 
     orbitsSet = []
-    subtables = list(map(getMultiplicationSubtable, genProductTables(k)))
-    while subtables:
-        sub = subtables[0]
-        orbit = getSymmetricGroupOrbitOfSubtable(sub)
-        for elem in orbit:
-            removeNumpyArrFromList(subtables, elem)
-        orbitsSet.append(orbit)
+    foundSubs = []
+    subtables = map(getMultiplicationSubtable, genProductTables(k))
+    for sub in subtables:
+        if not doesNumpyArrayContainArr(foundSubs, sub):
+            orbit = getSymmetricGroupOrbitOfSubtable(sub)
+            for elem in orbit:
+                if not np.array_equal(elem, sub):
+                    foundSubs.append(elem)
+            orbitsSet.append(orbit)
+
+        # This case is added as a heuristic to save on memory
+        # worst case is still O([k-1]!^[k-1]) memory where we find exactly 1 representative from each orbit at beginning
+        # this is done at cost of additional compute of removing from list. Can comment out to make faster.
+        else:
+            removeNumpyArrFromList(foundSubs, sub)
+
     return orbitsSet
 
 if __name__ == '__main__':
