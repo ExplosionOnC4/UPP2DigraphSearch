@@ -53,7 +53,8 @@ def recoverKnuthianMultiplicationTable(adj: np.ndarray) -> np.ndarray:
     random.shuffle(loops)
 
     # Find the loop vertex that must be labelled (0,0), this is explained in the case analysis later (symbols code snippet below)
-    # LEMMA: If a CDG is Knuthian then it has at most 1 loop vertex such that the multiset of intermidiate vertices between it and the other loop vertices contains no duplicates
+    # LEMMA: If a CDG is Knuthian then it has at most 1 loop vertex such that the multiset of intermediate vertices between it and the other loop vertices can contain duplicates
+    # i.e. if (a,a) -> (x,y) -> (b,b) and (c,c) -> (x,y) -> (b,b) [where (x,y) is the repeated intermid vertex] then necessarily (b,b) = (0,0) and a*a = c*c.
     # TODO this heuristic is not guaranteed and can return non-isomorphic tables if doesn't apply, find a way to completely tell what the (0,0) vertex should be.
     zeroLoop = -1
     for i in loops:
