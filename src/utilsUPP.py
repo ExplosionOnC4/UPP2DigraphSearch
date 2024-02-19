@@ -11,12 +11,42 @@ def checkMostSinglePath(adj: np.ndarray) -> bool:
 
     return np.max(np.linalg.matrix_power(adj, 2)) <= 1
 
+def isUPP(adj: np.ndarray) -> bool:
+    '''
+    Checks directly if `A^2=J`.
+    '''
+
+    return np.array_equal(np.linalg.matrix_power(adj, 2), np.ones(np.shape(adj)))
+
 def getLoopVerts(adj: np.ndarray) -> list[int]:
     '''
     Returns the list of indices of all looped vertices in the graph.
     '''
 
     return [i for i in range(np.shape(adj)[0]) if int(adj[i][i]) == 1]
+
+def findInneighbours(v: int, adj: np.ndarray) -> list[int]:
+    '''
+    For a given vertex `v`, find all of its inneighbours in the CDG given by 
+    '''
+
+    return [i for i in range(np.shape(adj)[0]) if adj[:,v][i] == 1]
+
+def findOutneighbours(v: int, adj: np.ndarray) -> list[int]:
+    '''
+    For a given vertex `v`, find all of its outneighbours in the CDG given by 
+    '''
+
+    return [i for i in range(np.shape(adj)[0]) if adj[v,:][i] == 1]
+
+def findConnectionVertex(u: int, v: int, adj: np.ndarray) -> int:
+    '''
+    Returns the unique intermidiate vertex between `u` and `v` in the CDG given by `adj`.
+    '''
+
+    if not isUPP(adj):
+        raise(ValueError('Provided adjacency is not UPP_2'))
+    return set(findOutneighbours(u, adj)).intersection(set(findInneighbours(v, adj))).pop()
 
 def createRowVectorFromIndexList(k: int, ls: list) -> np.ndarray:
     '''

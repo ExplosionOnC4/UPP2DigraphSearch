@@ -3,6 +3,7 @@ import numpy as np
 import networkx as nx
 from collections.abc import Generator
 from utilsUPP import *
+import random
 
 def genProductTables(k: int) -> Generator[np.ndarray, None, None]:
     '''
@@ -41,6 +42,63 @@ def getKnuthianAdjMatrix(table: np.ndarray) -> np.ndarray:
     '''
 
     return nx.to_numpy_array(makeKnuthianDigraph(table))
+
+def recoverKnuthianMultiplicationTable(adj: np.ndarray) -> np.ndarray:
+    '''
+    From a given adjacency matrix of a Knuthian CDG, restores a multiplication table for a binary operation that yielded the CDG.
+    '''
+
+    loops = getLoopVerts(adj)
+    # This was added for testing, as hypothetically we can assign the indices randomly and should still get isomorphic tables.
+    random.shuffle(loops)
+
+    # Find the loop vertex that must be labelled (0,0), this is explained in the case analysis later (symbols code snippet below)
+    # LEMMA: If a CDG is Knuthian then it has at most 1 loop vertex such that the multiset of intermidiate vertices between it and the other loop vertices contains no duplicates
+    # TODO this heuristic is not guaranteed and can return non-isomorphic tables if doesn't apply, find a way to completely tell what the (0,0) vertex should be.
+    zeroLoop = -1
+    for i in loops:
+        intermidVerts = [findConnectionVertex(j, i, adj) for j in loops]
+        if len(intermidVerts) != len(set(intermidVerts)):
+            zeroLoop = i
+    if zeroLoop == -1:
+        zeroLoop = loops[0]
+
+    # Assign each vertex in the graph a tuple which respects the product rule
+    # All loops have form (a,a)
+    loops.insert(0, loops.pop(loops.index(zeroLoop)))
+    cartesianProductRepresentation = {}
+    for i, loop in enumerate(loops):
+        cartesianProductRepresentation[loop] = (i,i)
+    
+    # intermid vertex between loops (a,a) and (b,b) has form (a,b) if b is not 0
+    # Thus label of intermid vertex is entirely determined by choice of looped vertices
+    for i, j in itertools.permutations(loops, 2):
+        if j != zeroLoop:
+            cartesianProductRepresentation[findConnectionVertex(i,j, adj)] = (cartesianProductRepresentation[i][1], cartesianProductRepresentation[j][0])
+
+    # print(cartesianProductRepresentation)
+    # print(findInneighbours(zeroLoop, adj))
+
+    # If (a,a) -> (x,y) -> (0,0) then (x,y) = (a * a, 0) which covers all inneighbours of (0,0)
+    # Now if (x,y) -> (z*z,0) => x * y = z * z so every inneigbour of (z*z,0) shares its symbol in the product table
+    # Further, all their inneighbours must be disjoint to obey UPP_2, so they cover all of the vertices not of the form (x,0)
+    # However it is possible that a*a = b*b and so two loops share an intermidiate vertex.
+    symbols = []
+    for u in findInneighbours(zeroLoop, adj):
+        if u != zeroLoop:
+            shareSymbol = []
+            for v in findInneighbours(u, adj):
+                shareSymbol.append(cartesianProductRepresentation[v])
+            symbols.append(shareSymbol)
+
+    # Insert symbols into product table such that first row is of standard form.
+    numElems = int(math.sqrt(len(adj)))
+    productTable = np.zeros((numElems, numElems))
+    for i in range(1, numElems):
+        sameSymbolList = [ls for ls in symbols if (0,i) in ls][0]
+        for x,y in sameSymbolList:
+            productTable[x][y] = i
+    return productTable
 
 def getMultiplicationSubtable(table: np.ndarray) -> np.ndarray:
     '''

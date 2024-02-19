@@ -40,7 +40,7 @@ def findAllSubcentralDigraphs(adj: np.ndarray) -> list[np.ndarray]:
     # Approach 1 seems much faster, since two loop vertices cannot be adjacent, it should find all vertices in closure relatively quickly
     for i in loops:
         lastVertexSet = set()
-        vertexSet = loops.difference({i})
+        vertexSet = set(loops).difference({i})
         while lastVertexSet != vertexSet and i not in vertexSet:
             lastVertexSet = vertexSet.copy()
             intermidVerts = set()
@@ -48,7 +48,7 @@ def findAllSubcentralDigraphs(adj: np.ndarray) -> list[np.ndarray]:
             # IDEA have list of VxV, if both elements are in vertex set then find intermid vertex and delete from VxV to avoid recompute.
             for v1, v2 in permutations(vertexSet, 2):
                 # TODO add utility function that give in/outneighbourhoods and take intersection
-                intermidVerts.update([i for i in range(np.shape(adj)[0]) if adj[v1,:][i] == 1 and adj[:,v2][i] == 1])
+                intermidVerts.add(findConnectionVertex(v1, v2, adj))
             vertexSet.update(intermidVerts)
         if i not in vertexSet:
             # transform back into adjacency
