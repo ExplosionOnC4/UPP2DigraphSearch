@@ -8,6 +8,7 @@ from readDataFiles import *
 from utilsUPP import *
 from switchingsUPP import *
 import matplotlib.pyplot as plt
+from knuthianUPP import *
 
 def getInducedUndirectedCanonAdj(adj: np.ndarray) -> np.ndarray:
     '''
@@ -47,7 +48,6 @@ def findAllSubcentralDigraphs(adj: np.ndarray) -> list[np.ndarray]:
             # for any perm of 2 elements from vertex set, add intermid vertex (cartesian product to be completely safe but should be unnecessary)
             # IDEA have list of VxV, if both elements are in vertex set then find intermid vertex and delete from VxV to avoid recompute.
             for v1, v2 in permutations(vertexSet, 2):
-                # TODO add utility function that give in/outneighbourhoods and take intersection
                 intermidVerts.add(findConnectionVertex(v1, v2, adj))
             vertexSet.update(intermidVerts)
         if i not in vertexSet:
@@ -217,6 +217,11 @@ if __name__ == '__main__':
     # CONJECTURE: NC is necessary and sufficient to be reducible
     # nonSFC = [i for i in range(len(ls)) if not satisfiesNeighbourhoodCondition(ls[i])]
     # print(len(nonSFC))
+                
+    # There are 698 (>> 44) 4-CDGs which contain the canonical 3-CDG as a subCDG.
+    # Thus contains canonical (k - 1)-CDG as a subCDG =/=> Knuthian
+    # containStandardSubCDG = [i for i, adj in enumerate(readOrderedComplete4()) if any([nx.is_isomorphic(nx.DiGraph(createStandardCentralDigraph(3)), nx.DiGraph(sub)) for sub in findAllSubcentralDigraphs(adj)])]
+    # print(len(containStandardSubCDG))
 
     pass
 

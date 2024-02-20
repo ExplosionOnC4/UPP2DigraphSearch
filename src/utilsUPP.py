@@ -48,6 +48,16 @@ def findConnectionVertex(u: int, v: int, adj: np.ndarray) -> int:
         raise(ValueError('Provided adjacency is not UPP_2'))
     return set(findOutneighbours(u, adj)).intersection(set(findInneighbours(v, adj))).pop()
 
+def findDigonTwin(v: int, adj: np.ndarray) -> int:
+    '''
+    Returns the adjacent vertex of the digon system containing `v`.
+    '''
+
+    if v in getLoopVerts(adj):
+        raise(ValueError('Provided vertex is a loop'))
+    else:
+        return findConnectionVertex(v, v, adj)
+
 def createRowVectorFromIndexList(k: int, ls: list) -> np.ndarray:
     '''
     Given a list of indices, creates a k^2 dim {0-1} vector with 1's in the specified indices
