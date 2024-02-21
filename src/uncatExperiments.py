@@ -124,15 +124,18 @@ if __name__ == '__main__':
 
     # Finding what arcs where flipped between 4-CDGs lying in the same undirected equivalence class
     flippedSubgraphs = {}
+    showShadowArcs = False
+    mult = 1 if not showShadowArcs else -1
+
     for cert, eqClass in undirectedDict.items():
         if len(eqClass) >= 2:
             for i1, i2 in combinations(eqClass, 2):
                 # on comparison, select the CDG or reverse that leaves a smaller number of flipped arcs.
                 # TODO consider drawing the -1 edges in a different colour instead of zeroing out
-                flips1 = np.clip(getInducedUndirectedCanonAdj(ls[i1]) - getInducedUndirectedCanonAdj(ls[i2]), a_min=0, a_max=None)
-                flips2 = np.clip(getInducedUndirectedCanonAdj(ls[i1]) - getInducedUndirectedCanonAdj(ls[reverseDict[i2]]), a_min=0, a_max=None)
+                flips1 = np.clip(mult * (getInducedUndirectedCanonAdj(ls[i1]) - getInducedUndirectedCanonAdj(ls[i2])), a_min=0, a_max=None)
+                flips2 = np.clip(mult * (getInducedUndirectedCanonAdj(ls[i1]) - getInducedUndirectedCanonAdj(ls[reverseDict[i2]])), a_min=0, a_max=None)
                 # need this in case second CDG is self-reverse
-                flips3 = np.clip(getInducedUndirectedCanonAdj(ls[reverseDict[i1]]) - getInducedUndirectedCanonAdj(ls[i2]), a_min=0, a_max=None)
+                flips3 = np.clip(mult * (getInducedUndirectedCanonAdj(ls[reverseDict[i1]]) - getInducedUndirectedCanonAdj(ls[i2])), a_min=0, a_max=None)
                 # flippedComponent = flips1 if np.sum(flips1) <= np.sum(flips2) else flips2
                 # flippedComponent = [flip for flip in [flips1, flips2, flips3] if np.sum(flip) == min(np.sum(flips1), np.sum(flips2), np.sum(flips3))][0]
                 # cdgIndices = (i1, i2) if np.sum(flips1) <= np.sum(flips2) else (i1, reverseDict[i2])
@@ -222,6 +225,27 @@ if __name__ == '__main__':
     # Thus contains canonical (k - 1)-CDG as a subCDG =/=> Knuthian
     # containStandardSubCDG = [i for i, adj in enumerate(readOrderedComplete4()) if any([nx.is_isomorphic(nx.DiGraph(createStandardCentralDigraph(3)), nx.DiGraph(sub)) for sub in findAllSubcentralDigraphs(adj)])]
     # print(len(containStandardSubCDG))
+                
+    knuthianList4 = [getKnuthianAdjMatrix(extendMultiplicationSubtable(orb[0])) for orb in findAllOrbitsSymmetricGroupSubtables(4)]
+    knuthianCertList = list(map(lambda adj : nauty.certificate(createNautyGraphFromAdjMatrix(adj)), knuthianList4))
+    knuthianIndices = [certList.index(cert) for cert in knuthianCertList]
+    # print(knuthianIndices)
+
+    knuthianReverseList = [np.transpose(adj) for adj in knuthianList4]
+    knuthianReverseCertList = list(map(lambda adj : nauty.certificate(createNautyGraphFromAdjMatrix(adj)), knuthianReverseList))
+    knuthianReverseDict = {}
+    for i in range(len(knuthianCertList)):
+        if knuthianCertList[i] in knuthianReverseCertList:
+            knuthianReverseDict[i] = knuthianReverseCertList.index(knuthianCertList[i])
+        else:
+            knuthianReverseDict[i] = -1
+    knuthianSelfReverseList = [i for i in knuthianReverseDict.keys() if knuthianReverseDict[i] == i]
+    # !! Reverse of Knuthian CDG is Knuthian only if it is self-reverse !!
+    # print([reverseDict[i] in knuthianIndices for i in knuthianIndices])
+    # print(knuthianReverseDict)
+    # print(knuthianSelfReverseList)
+    selfReverseTables = [recoverKnuthianMultiplicationTable(knuthianList4[i]) for i in knuthianSelfReverseList]
+    print('\n\n'.join([np.array_str(i) for i in selfReverseTables]))
 
     pass
 

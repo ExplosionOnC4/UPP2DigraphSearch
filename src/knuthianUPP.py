@@ -167,6 +167,13 @@ def getMultiplicationSubtable(table: np.ndarray) -> np.ndarray:
 
     return np.delete(np.delete(table, 0, 1), 0, 0)
 
+def extendMultiplicationSubtable(subtable: np.ndarray) -> np.ndarray:
+    '''
+    Undoes getMultiplicationSubtable() by adding back the superfluous first row and column.
+    '''
+
+    return np.block([[np.arange(len(subtable) + 1)], [np.zeros((len(subtable), 1)), subtable]])
+
 def applySymmetricActionOnSubtable(subtable: np.ndarray, perm: dict) -> np.ndarray:
     '''
     Apply the action of the group S_{k-1} on the k-1 x k-1 multiplication subtable given in https://cklixx.people.wm.edu/reu02.pdf.
@@ -314,4 +321,6 @@ if __name__ == '__main__':
     # tab = np.array([[0,1,2,3],[0,1,3,2],[0,3,2,1],[0,2,1,3]])
     # adj = getKnuthianAdjMatrix(tab)
     # print(recoverKnuthianMultiplicationTable(adj))
+
+    print(findAllOrbitsSymmetricGroupSubtables(4))
     pass
