@@ -3,6 +3,8 @@ import networkx as nx
 import pynauty as nauty
 import math
 import subprocess
+import itertools
+from collections.abc import Iterable
 
 def checkMostSinglePath(adj: np.ndarray) -> bool:
     '''
@@ -57,6 +59,35 @@ def findDigonTwin(v: int, adj: np.ndarray) -> int:
         raise(ValueError('Provided vertex is a loop'))
     else:
         return findConnectionVertex(v, v, adj)
+    
+def getUPPClosureOfSubset(includedVerts: Iterable[int], adj: np.ndarray, excludedVerts=set()) -> np.ndarray | None:
+    '''
+    Finds the UPP_2 closure of a subset of vertices of CDG given by `adj`.
+    The optional argument `excludedVerts` acts as an early abort condition if closure contains an excluded vertex, in which case returns None
+    '''
+
+    # Two approaches, either start with k-1 loop vertices and see if UPP2 closure contains the k-th one,
+    # OR delete every choice of 2k-1 row/columns from original k-CDG (=> O(k*[k^2-1 C 2k-2]))
+    # Approach 1 seems much faster, since two loop vertices cannot be adjacent, it should find all vertices in closure relatively quickly
+    lastVertexSet = set()
+    vertexSet = set(includedVerts)
+    while lastVertexSet != vertexSet and not vertexSet.intersection(set(excludedVerts)):
+        lastVertexSet = vertexSet.copy()
+        intermidVerts = set()
+        # for any perm of 2 elements from vertex set, add intermid vertex (cartesian product to be completely safe but should be unnecessary)
+        # IDEA have list of VxV, if both elements are in vertex set then find intermid vertex and delete from VxV to avoid recompute.
+        for v1, v2 in itertools.permutations(vertexSet, 2):
+            intermidVerts.add(findConnectionVertex(v1, v2, adj))
+        vertexSet.update(intermidVerts)
+    if not vertexSet.intersection(set(excludedVerts)):
+        # transform back into adjacency
+        scdg = np.zeros((len(vertexSet), len(vertexSet)))
+        for i, vi in enumerate(vertexSet):
+            for j, vj in enumerate(vertexSet):
+                scdg[i][j] = adj[vi][vj]
+        return scdg
+    return
+    
 
 def createRowVectorFromIndexList(k: int, ls: list) -> np.ndarray:
     '''

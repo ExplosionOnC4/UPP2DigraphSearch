@@ -83,27 +83,8 @@ def recoverKnuthianMultiplicationTable(adj: np.ndarray) -> np.ndarray:
         # Thus if a loop vertex is assignable (0,0) then the UPP closure without it must be the standard subCDG.
         removeLoops = []
         for loop in possibleZeroLoops:
-            lastVertexSet = set()
-            vertexSet = set(loops).difference({loop})
-            while lastVertexSet != vertexSet and loop not in vertexSet:
-                lastVertexSet = vertexSet.copy()
-                intermidVerts = set()
-                # for any perm of 2 elements from vertex set, add intermid vertex (cartesian product to be completely safe but should be unnecessary)
-                # IDEA have list of VxV, if both elements are in vertex set then find intermid vertex and delete from VxV to avoid recompute.
-                for v1, v2 in itertools.permutations(vertexSet, 2):
-                    intermidVerts.add(findConnectionVertex(v1, v2, adj))
-                vertexSet.update(intermidVerts)
-            if loop not in vertexSet:
-                # transform back into adjacency
-                scdg = np.zeros((len(vertexSet), len(vertexSet)))
-                for i, vi in enumerate(vertexSet):
-                    for j, vj in enumerate(vertexSet):
-                        scdg[i][j] = adj[vi][vj]
-                # Check if subCDG is canonical
-                # TODO rewrite this to apply permutation on scdg to transform it to basis form and then array_equal() directly as might be faster
-                if not nx.is_isomorphic(nx.DiGraph(scdg), nx.DiGraph(createStandardCentralDigraph(len(loops) - 1))):
-                    removeLoops.append(loop)
-            else:
+            scdg = getUPPClosureOfSubset(set(loops).difference({loop}), adj, {loop})
+            if scdg is None or not nx.is_isomorphic(nx.DiGraph(scdg), nx.DiGraph(createStandardCentralDigraph(len(loops) - 1))):
                 removeLoops.append(loop)
         for l in removeLoops:
             possibleZeroLoops.remove(l)      

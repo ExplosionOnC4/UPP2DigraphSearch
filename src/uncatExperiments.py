@@ -24,7 +24,7 @@ def getInducedUndirectedCanonAdj(adj: np.ndarray) -> np.ndarray:
     D = nx.relabel_nodes(nx.DiGraph(adj), perm)
     return nx.to_numpy_array(D, nodelist=[*range(np.shape(adj)[0])])
 
-def findAllSubcentralDigraphs(adj: np.ndarray) -> list[np.ndarray]:
+def findAllSubcentralDigraphs(adj: np.ndarray, excludeNeighbours=False) -> list[np.ndarray]:
     '''
     For a CDG, return a list of all of its subcentral digraphs.
     '''
@@ -35,29 +35,11 @@ def findAllSubcentralDigraphs(adj: np.ndarray) -> list[np.ndarray]:
 
     SCDGs = []
     loops = getLoopVerts(adj)
-
-    # Two approaches, either start with k-1 loop vertices and see if UPP2 closure contains the k-th one,
-    # OR delete every choice of 2k-1 row/columns from original k-CDG (=> O(k*[k^2-1 C 2k-2]))
-    # Approach 1 seems much faster, since two loop vertices cannot be adjacent, it should find all vertices in closure relatively quickly
     for i in loops:
-        lastVertexSet = set()
-        vertexSet = set(loops).difference({i})
-        while lastVertexSet != vertexSet and i not in vertexSet:
-            lastVertexSet = vertexSet.copy()
-            intermidVerts = set()
-            # for any perm of 2 elements from vertex set, add intermid vertex (cartesian product to be completely safe but should be unnecessary)
-            # IDEA have list of VxV, if both elements are in vertex set then find intermid vertex and delete from VxV to avoid recompute.
-            for v1, v2 in permutations(vertexSet, 2):
-                intermidVerts.add(findConnectionVertex(v1, v2, adj))
-            vertexSet.update(intermidVerts)
-        if i not in vertexSet:
-            # transform back into adjacency
-            scdg = np.zeros((len(vertexSet), len(vertexSet)))
-            for i, vi in enumerate(vertexSet):
-                for j, vj in enumerate(vertexSet):
-                    scdg[i][j] = adj[vi][vj]
+        excludeSet = {i} if not excludeNeighbours else set(findInneighbours(i, adj)).union(set(findOutneighbours(i, adj)))
+        scdg = getUPPClosureOfSubset(set(loops).difference(excludeSet), adj, {i})
+        if scdg is not None:
             SCDGs.append(scdg)
-    
     return SCDGs
 
 def calcAverageCommonNeighboursLoopVertices(adj: np.ndarray) -> tuple:
@@ -215,6 +197,10 @@ if __name__ == '__main__':
     # print(len(nonMajorCDGs))
     # print(set(nonMajorCDGs).difference(set(irreducible4CDGs)))
     # print(len(set(irreducible4CDGs).difference(set(maxRanks))))
+
+    # !! Both of below are equal => all subcentral digraphs are achieved by removing loop + all its neighbours !!
+    # print(collections.Counter([len(findAllSubcentralDigraphs(i)) for i in ls]))
+    # print(collections.Counter([len(findAllSubcentralDigraphs(i, excludeNeighbours=True)) for i in ls]))
 
     # 328 CDGs do not satisfy the neighbourhood condition, which are all exactly the irreducible ones.
     # CONJECTURE: NC is necessary and sufficient to be reducible
