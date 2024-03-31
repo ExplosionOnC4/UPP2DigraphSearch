@@ -259,6 +259,13 @@ def filterIsomorphs(ls: list[np.ndarray]) -> list[np.ndarray]:
 
     return out
 
+def convertAdjMatrixToBinaryString(adj: np.ndarray) -> str:
+    '''
+    Convert a nxn adjacency matrix into a binary string of length n^2, by concatenating its rows
+    '''
+
+    return ''.join(str(int(i)) for l in adj for i in l)
+
 def convertBinaryToSetRepresentation(binRep: str) -> list[int]:
     '''
     Helper function to read in orderedComplete4, convert binary representation of digraph to its set representation

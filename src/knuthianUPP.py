@@ -14,7 +14,7 @@ def genProductTables(k: int) -> Generator[np.ndarray, None, None]:
 
     # Generate k-1 permutations of {1..k-1}
     allPerms = list(itertools.permutations(range(1,k)))
-    permSubsets = list(itertools.product(range(len(allPerms)), repeat=k-1))
+    permSubsets = itertools.product(range(len(allPerms)), repeat=k-1)
     for permSubset in permSubsets:
         perms = np.array([[0] + list(allPerms[i]) for i in permSubset])
         
@@ -303,5 +303,13 @@ if __name__ == '__main__':
     # adj = getKnuthianAdjMatrix(tab)
     # print(recoverKnuthianMultiplicationTable(adj))
 
-    print(findAllOrbitsSymmetricGroupSubtables(4))
+    tab = np.array([[0,3,1,2],[0,1,3,2],[0,2,1,3],[0,1,2,3]])
+    adj = getKnuthianAdjMatrix(tab)
+    print(adj)
+    # for i in range(len(adj)):
+    #     for j in range(len(adj)):
+    #         if adj[len(adj)-i-1][j] == 1:
+    #             print(f"\draw [draw=black, fill=black] ({j},{i}) rectangle ({j+1},{i+1});")
+
+    # print(findAllOrbitsSymmetricGroupSubtables(4))
     pass

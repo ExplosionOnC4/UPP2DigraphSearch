@@ -15,6 +15,17 @@ def readOrderedComplete4() -> list[np.ndarray]:
         ls = f.read().split('\n')[:-1]
     return list(map(lambda binRep : getAdjacencyMatrixFromSet(convertBinaryToSetRepresentation(binRep), 16), ls))
 
+def readCompleteKnuthian(k: int) -> list[np.ndarray]:
+    '''
+    Reads in from file the complete list of all non-isomorphic Knuthian CDG made from k x k product tables
+
+    :return list of adjacency matrices
+    '''
+
+    with open(os.path.join(dataDir, f'completeKnuthian{k}.txt'), 'r') as f:
+        ls = f.read().split('\n')[:-1]
+    return list(map(lambda binRep : getAdjacencyMatrixFromSet(convertBinaryToSetRepresentation(binRep), k ** 2), ls))
+
 def readMajorGk(k: int, keepCerts=False) -> list[np.ndarray]:
     '''
     Read in all CDGs from file containing all CDG in the major component of G_k by switchings
