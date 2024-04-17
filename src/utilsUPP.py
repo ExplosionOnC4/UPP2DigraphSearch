@@ -121,6 +121,8 @@ def createBasisBlockMatrix(i: int, k: int) -> np.ndarray:
 def partitionEqualRowIndices(adj: np.ndarray) -> map:
     '''
     Partitions the set of row indices into equivalence classes based on equality, i.e. two rows will lie in the same class if they are equal
+
+    :return: dictionary where keys are byte representation of rows, and values are the row indices which are equal to the given row.
     '''
 
     rowsHashMap={}
