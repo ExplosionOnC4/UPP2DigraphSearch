@@ -55,6 +55,38 @@ def calcAverageCommonNeighboursLoopVertices(adj: np.ndarray) -> tuple:
         i += 1
     return (inAverage / i, outAverage / i)
 
+def checkKnuthianSwitchComponent(adj, knuthCertList):
+    q = Queue()
+    isomorphHash = {}
+
+    q.put(adj)
+    while not q.empty():
+        tempAdj = q.get()
+        # lists aren't hashable
+        tempLabel = nauty.certificate(createNautyGraphFromAdjMatrix(tempAdj))
+
+        # TODO make this quicker, eg only check on partitions of rows/columns
+        for rows in list(itertools.combinations(range(np.shape(tempAdj)[0]), 2)):
+            for cols in list(itertools.combinations(range(np.shape(tempAdj)[1]), 2)):
+                if validSwitch(tempAdj, *rows, *cols):
+                    newAdj = np.copy(tempAdj)
+                    performSwitch(newAdj, *rows, *cols)
+                    newLabel = nauty.certificate(createNautyGraphFromAdjMatrix(newAdj))
+                    if newLabel in knuthCertList:
+
+                        # For a central digraph, look at the digraphs attainable from one switch and add them to the neighbourhood
+                        if tempLabel in isomorphHash and newLabel not in isomorphHash[tempLabel]:
+                            isomorphHash[tempLabel].append(newLabel)
+                        else:
+                            isomorphHash[tempLabel] = [newLabel]
+                        
+                        # Put switched digraph in queue if has not been seen before and add to hash
+                        if newLabel not in isomorphHash:
+                            q.put(newAdj)
+                        isomorphHash[newLabel] = [tempLabel]
+
+    return isomorphHash
+
 if __name__ == '__main__':
 
     ls = readOrderedComplete4()
@@ -216,6 +248,9 @@ if __name__ == '__main__':
     knuthianCertList = list(map(lambda adj : nauty.certificate(createNautyGraphFromAdjMatrix(adj)), knuthianList4))
     knuthianIndices = [certList.index(cert) for cert in knuthianCertList]
     # print(knuthianIndices)
+
+    # !!! The induced subgraph on Knuthian 4-CDGs of the switching graph is connected !!!
+    # print(len(checkKnuthianSwitchComponent(createStandardCentralDigraph(4), knuthianCertList)))
 
     knuthianReverseList = [np.transpose(adj) for adj in knuthianList4]
     knuthianReverseCertList = list(map(lambda adj : nauty.certificate(createNautyGraphFromAdjMatrix(adj)), knuthianReverseList))
