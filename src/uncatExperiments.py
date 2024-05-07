@@ -1,5 +1,9 @@
 # File to store research directions and random experiments/ideas before being categorised. Expect large commented out sections for past calculations
 
+import random
+import multiprocessing as mp
+import gc
+import functools
 import numpy as np
 import collections
 import pynauty as nauty
@@ -86,6 +90,47 @@ def checkKnuthianSwitchComponent(adj, knuthCertList):
                         isomorphHash[newLabel] = [tempLabel]
 
     return isomorphHash
+
+def genRandomSumRegularMatrix(k: int):
+    rowBlock = [i for i in range(k ** 2)]
+    intermid = []
+    allRows = set()
+    for _ in range(k):
+        rowsDistinct = False
+        while not rowsDistinct:
+            random.shuffle(rowBlock)
+            rows = []
+            for i in range(k):
+                row = createRowVectorFromIndexList(k, rowBlock[i*k:(i+1)*k])
+                if row.tobytes() in allRows:
+                    rowsDistinct = not rowsDistinct
+                    break
+                else:
+                    rows.append(row)
+                    allRows.add(row.tobytes())
+            rowsDistinct = not rowsDistinct
+        intermid.append(np.vstack(rows))
+    return np.vstack(intermid)
+
+def minRankNoEqualRowMatrices(k: int):
+    minRank = math.inf
+    possibleRows = map(createRowVectorFromIndexList, itertools.repeat(k), itertools.combinations(range(k ** 2), k))
+
+    for rowSet in itertools.combinations(possibleRows, k ** 2):
+        matrix = np.vstack(rowSet)
+        # Not UPP, but just all same row/colsums and no repeat rows
+        if np.linalg.matrix_rank(matrix) < minRank:
+            minRank = np.linalg.matrix_rank(matrix)
+            print('New lowest rank: ', minRank)
+    
+def getRanks(mat):
+    # Print counterexample if it is found
+    if isUPP(mat):
+        print(mat)
+    return np.linalg.matrix_rank(mat)
+
+def f(k):
+    return getRanks(genRandomSumRegularMatrix(k))
 
 if __name__ == '__main__':
 
@@ -267,6 +312,33 @@ if __name__ == '__main__':
     # print(knuthianSelfReverseList)
     selfReverseTables = [recoverKnuthianMultiplicationTable(knuthianList4[i]) for i in knuthianSelfReverseList]
     print('\n\n'.join([np.array_str(i) for i in selfReverseTables]))
+
+
+    # DATA:
+    #  k | minRank | numTrials
+    #  4 |   10    |   10^7
+    #  5 |   19    |   10^7
+    #  6 |   30    |   10^7
+    #  7 |   42    |   10^7
+    #  8 |   57    |   10^7
+
+    # Try to find minimum rank of {0,1} matrix with constant row/colsum and no repeat rows
+    numTrials = int(1e7)
+    processChunk = int(numTrials / 5) # Make smaller if running out of memory
+    size = 8
+    print('Generating random %ix%i matrices with equal row/colsums and no repeat rows:' % (size,size))
+
+    minRank = math.inf
+    p = mp.Pool(mp.cpu_count() - 1)
+
+    for i in range(math.ceil(numTrials / processChunk)):
+        mats = p.map(f, [size] * processChunk)
+        minRank = min(minRank, min(mats))
+        print("finished chunk %i!" % (i + 1))
+        del mats
+        gc.collect()
+
+    print('The minimum rank of %i matrices is %i' % (numTrials, minRank))
 
     pass
 
