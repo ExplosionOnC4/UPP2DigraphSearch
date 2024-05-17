@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+title: UPPDigraphSearch
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Andrey
+    family-names: Lugovskoy
+    email: 22894627@student.uwa.edu.au
+    affiliation: University of Western Australia
+abstract: >-
+  A software repository which contains tools and
+  implementations of algorithms for studying central
+  digraph, being ones whose adjacency matrix satisfies the
+  equation A^2=J where J is the all 1's matrix.
+license: MIT
